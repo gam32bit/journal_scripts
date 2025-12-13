@@ -1,46 +1,63 @@
 #!/bin/bash
 
 # Weekly Review Script for Saturdays
+# Aggregates data from daily journals and weekly plan
+
 JOURNAL_DIR="$HOME/Journal"
 DATE=$(date +%Y-%m-%d)
 FILE="$JOURNAL_DIR/review-$DATE.txt"
 
-# Find this week's files
-find_week_files() {
-    local today=$(date +%s)
-    local day_of_week=$(date +%u)
+# Create journal directory if it doesn't exist
+mkdir -p "$JOURNAL_DIR"
+
+# Find this week's Sunday and weekly file
+find_weekly_file() {
+    local day_of_week=$(date +%u)  # 1=Monday, 7=Sunday
+    local days_since_sunday
     
-    # Calculate days since last Sunday
-    if [ $day_of_week -eq 7 ]; then
+    if [ "$day_of_week" -eq 7 ]; then
         days_since_sunday=0
     else
         days_since_sunday=$day_of_week
     fi
     
-    local sunday_date=$(date -d "$days_since_sunday days ago" +%Y-%m-%d)
+    local sunday_date=$(date -d "-${days_since_sunday} days" +%Y-%m-%d)
     local weekly_file="$JOURNAL_DIR/weekly-$sunday_date.txt"
     
-    # Find all daily files from this week
-    local daily_files=()
-    for i in $(seq 0 $((day_of_week-1))); do
-        local day_date=$(date -d "$i days ago" +%Y-%m-%d)
+    if [ -f "$weekly_file" ]; then
+        echo "$weekly_file"
+    else
+        echo ""
+    fi
+}
+
+# Find all daily files from this week (Sunday through today)
+find_daily_files() {
+    local day_of_week=$(date +%u)  # 1=Monday, 7=Sunday
+    local days_since_sunday
+    
+    if [ "$day_of_week" -eq 7 ]; then
+        days_since_sunday=0
+    else
+        days_since_sunday=$day_of_week
+    fi
+    
+    # Collect daily files from Sunday to today
+    for i in $(seq "$days_since_sunday" -1 0); do
+        local day_date=$(date -d "-${i} days" +%Y-%m-%d)
         local daily_file="$JOURNAL_DIR/daily-$day_date.txt"
         if [ -f "$daily_file" ]; then
-            daily_files+=("$daily_file")
+            echo "$daily_file"
         fi
     done
-    
-    echo "$weekly_file"
-    printf '%s\n' "${daily_files[@]}"
 }
 
 # Calculate average sleep score
 calculate_sleep_average() {
-    local files=("$@")
     local total=0
     local count=0
     
-    for file in "${files[@]}"; do
+    while IFS= read -r file; do
         if [ -f "$file" ]; then
             local sleep=$(grep "^SLEEP QUALITY:" "$file" | sed 's/.*\[//' | sed 's/\].*//' | tr '[:upper:]' '[:lower:]')
             if [[ "$sleep" == *"good"* ]]; then
@@ -50,13 +67,12 @@ calculate_sleep_average() {
                 total=$(echo "$total + 0.5" | bc)
                 ((count++))
             elif [[ "$sleep" == *"bad"* ]]; then
-                total=$(echo "$total + 0" | bc)
                 ((count++))
             fi
         fi
     done
     
-    if [ $count -gt 0 ]; then
+    if [ "$count" -gt 0 ]; then
         echo "scale=2; $total / $count" | bc
     else
         echo "N/A"
@@ -65,11 +81,15 @@ calculate_sleep_average() {
 
 # Get all eating reflections
 get_eating_reflections() {
-    local files=("$@")
-    for file in "${files[@]}"; do
+    while IFS= read -r file; do
         if [ -f "$file" ]; then
             local date=$(basename "$file" | sed 's/daily-//' | sed 's/.txt//')
-            local reflection=$(sed -n '/^YESTERDAY'\''S EATING REFLECTION:/,/^TASKS COMPLETED/p' "$file" | grep -v "^YESTERDAY'S EATING" | grep -v "^TASKS COMPLETED" | grep -v "^$" | grep -v "^---" | grep -v "^===")
+            local reflection=$(sed -n "/^YESTERDAY'S EATING REFLECTION:/,/^TASKS COMPLETED/p" "$file" | \
+                              grep -v "^YESTERDAY'S EATING" | \
+                              grep -v "^TASKS COMPLETED" | \
+                              grep -v '^$' | \
+                              grep -v '^---' | \
+                              grep -v '^===')
             if [ -n "$reflection" ]; then
                 echo "[$date]"
                 echo "$reflection"
@@ -79,16 +99,58 @@ get_eating_reflections() {
     done
 }
 
-# Get all tags with timeline
+# Get tag frequency with bar chart
+get_tag_frequency() {
+    declare -A tag_count
+    
+    while IFS= read -r file; do
+        if [ -f "$file" ]; then
+            local tags=$(sed -n '/^TAGS:/,/^===/p' "$file" | \
+                        grep -v "^TAGS:" | \
+                        grep -v "^===" | \
+                        grep -v '^$' | \
+                        tr ' ' '\n' | \
+                        tr ',' '\n' | \
+                        sed 's/^[ \t]*//' | \
+                        grep -v '^$')
+            
+            while IFS= read -r tag; do
+                if [ -n "$tag" ]; then
+                    ((tag_count[$tag]++))
+                fi
+            done <<< "$tags"
+        fi
+    done
+    
+    if [ ${#tag_count[@]} -eq 0 ]; then
+        echo "(No tags recorded)"
+        return
+    fi
+    
+    # Print frequency chart sorted by count
+    for tag in "${!tag_count[@]}"; do
+        local count=${tag_count[$tag]}
+        local bar=$(printf '█%.0s' $(seq 1 "$count"))
+        echo "$tag ($count): $bar"
+    done | sort -t'(' -k2 -rn
+}
+
+# Get tags with timeline (which days they appeared)
 get_tags_timeline() {
-    local files=("$@")
     declare -A tag_days
     
-    for file in "${files[@]}"; do
+    while IFS= read -r file; do
         if [ -f "$file" ]; then
             local date=$(basename "$file" | sed 's/daily-//' | sed 's/.txt//')
             local day_name=$(date -d "$date" +%A)
-            local tags=$(sed -n '/^TAGS:/,/^===/p' "$file" | grep -v "^TAGS:" | grep -v "^===" | grep -v "^$" | tr ' ' '\n' | tr ',' '\n' | sed 's/^[ \t]*//' | grep -v "^$")
+            local tags=$(sed -n '/^TAGS:/,/^===/p' "$file" | \
+                        grep -v "^TAGS:" | \
+                        grep -v "^===" | \
+                        grep -v '^$' | \
+                        tr ' ' '\n' | \
+                        tr ',' '\n' | \
+                        sed 's/^[ \t]*//' | \
+                        grep -v '^$')
             
             while IFS= read -r tag; do
                 if [ -n "$tag" ]; then
@@ -102,100 +164,107 @@ get_tags_timeline() {
         fi
     done
     
+    if [ ${#tag_days[@]} -eq 0 ]; then
+        echo "(No tags recorded)"
+        return
+    fi
+    
     # Print tags with their timeline
     for tag in "${!tag_days[@]}"; do
         echo "$tag: ${tag_days[$tag]}"
     done | sort
 }
 
-# Get tag frequency
-get_tag_frequency() {
-    local files=("$@")
-    declare -A tag_count
-    
-    for file in "${files[@]}"; do
-        if [ -f "$file" ]; then
-            local tags=$(sed -n '/^TAGS:/,/^===/p' "$file" | grep -v "^TAGS:" | grep -v "^===" | grep -v "^$" | tr ' ' '\n' | tr ',' '\n' | sed 's/^[ \t]*//' | grep -v "^$")
-            
-            while IFS= read -r tag; do
-                if [ -n "$tag" ]; then
-                    ((tag_count[$tag]++))
-                fi
-            done <<< "$tags"
-        fi
-    done
-    
-    # Print frequency chart
-    for tag in "${!tag_count[@]}"; do
-        local count=${tag_count[$tag]}
-        local bar=$(printf '█%.0s' $(seq 1 $count))
-        echo "$tag ($count): $bar"
-    done | sort -t'(' -k2 -rn
-}
-
 # Get completed vs incomplete tasks
 get_task_status() {
-    local weekly_file=$1
+    local weekly_file="$1"
     
-    if [ ! -f "$weekly_file" ]; then
+    if [ -z "$weekly_file" ] || [ ! -f "$weekly_file" ]; then
         echo "No weekly plan found"
         return
     fi
     
-    echo "COMPLETED TASKS:"
-    echo "----------------"
-    local completed=$(sed -n '/\[COMPLETED_TASKS\]/,/^===/p' "$weekly_file" | grep -v '^\[COMPLETED_TASKS\]' | grep -v '^===' | grep -v '^$')
+    echo "COMPLETED:"
+    local completed=$(sed -n '/\[COMPLETED_TASKS\]/,/^===/p' "$weekly_file" | \
+                     grep -v '^\[COMPLETED_TASKS\]' | \
+                     grep -v '^===' | \
+                     grep -v '^$')
+    
     if [ -z "$completed" ]; then
-        echo "(none)"
+        echo "  (none)"
     else
-        echo "$completed" | while read -r line; do echo "✓ $line"; done
+        echo "$completed" | while read -r line; do
+            if [ -n "$line" ]; then
+                echo "  ✓ $line"
+            fi
+        done
     fi
     
     echo ""
-    echo "INCOMPLETE TASKS:"
-    echo "-----------------"
+    echo "INCOMPLETE:"
     
     # Get all tasks
-    local all_tasks=$(sed -n '/^TASKS FOR THIS WEEK:/,/^FOCUS AREAS/p' "$weekly_file" | grep '^- ' | sed 's/^- //')
+    local all_tasks=$(sed -n '/^TASKS FOR THIS WEEK:/,/^FOCUS AREAS/p' "$weekly_file" | \
+                     grep '^- ' | \
+                     sed 's/^- //')
     
     # Filter out completed ones
     local has_incomplete=false
     while IFS= read -r task; do
         if [ -n "$task" ]; then
-            if ! echo "$completed" | grep -Fq "$task"; then
-                echo "○ $task"
+            if ! echo "$completed" | grep -Fxq "$task"; then
+                echo "  ○ $task"
                 has_incomplete=true
             fi
         fi
     done <<< "$all_tasks"
     
     if [ "$has_incomplete" = false ]; then
-        echo "(none - great job!)"
+        echo "  (none - great job!)"
     fi
 }
 
-# Get focus areas
+# Get focus areas from weekly plan
 get_focus_areas() {
-    local weekly_file=$1
-    if [ ! -f "$weekly_file" ]; then
-        echo "No weekly plan found"
+    local weekly_file="$1"
+    
+    if [ -z "$weekly_file" ] || [ ! -f "$weekly_file" ]; then
+        echo "(No weekly plan found)"
         return
     fi
     
-    sed -n '/^FOCUS AREAS/,/^===/p' "$weekly_file" | grep '^- '
+    local areas=$(sed -n '/^FOCUS AREAS/,/^\(\[COMPLETED_TASKS\]\|===\)/p' "$weekly_file" | \
+                 grep '^- ')
+    
+    if [ -n "$areas" ]; then
+        echo "$areas"
+    else
+        echo "(No focus areas defined)"
+    fi
 }
 
-# Main script
-IFS=$'\n' read -d '' -r -a week_files < <(find_week_files)
-WEEKLY_FILE="${week_files[0]}"
-DAILY_FILES=("${week_files[@]:1}")
+# Check if review already exists
+if [ -f "$FILE" ]; then
+    echo "Weekly review already exists: $FILE"
+    echo "Opening existing file..."
+    vim "$FILE"
+    exit 0
+fi
 
-SLEEP_AVG=$(calculate_sleep_average "${DAILY_FILES[@]}")
-EATING_REFLECTIONS=$(get_eating_reflections "${DAILY_FILES[@]}")
-TAG_TIMELINE=$(get_tags_timeline "${DAILY_FILES[@]}")
-TAG_FREQUENCY=$(get_tag_frequency "${DAILY_FILES[@]}")
+# Gather data
+WEEKLY_FILE=$(find_weekly_file)
+DAILY_FILES=$(find_daily_files)
+
+# Calculate metrics by piping daily files to functions
+SLEEP_AVG=$(echo "$DAILY_FILES" | calculate_sleep_average)
+EATING_REFLECTIONS=$(echo "$DAILY_FILES" | get_eating_reflections)
+TAG_FREQUENCY=$(echo "$DAILY_FILES" | get_tag_frequency)
+TAG_TIMELINE=$(echo "$DAILY_FILES" | get_tags_timeline)
 TASK_STATUS=$(get_task_status "$WEEKLY_FILE")
 FOCUS_AREAS=$(get_focus_areas "$WEEKLY_FILE")
+
+# Count daily entries found
+DAILY_COUNT=$(echo "$DAILY_FILES" | grep -c .)
 
 # Create the review file
 cat > "$FILE" << EOF
@@ -203,6 +272,8 @@ cat > "$FILE" << EOF
 WEEKLY REVIEW
 Week ending: $(date +"%B %d, %Y")
 ===========================================
+
+Daily entries found: $DAILY_COUNT
 
 SLEEP ANALYSIS:
 ---------------
@@ -213,6 +284,7 @@ Average Sleep Score: $SLEEP_AVG
 
 EMOTIONAL LANDSCAPE (Tags):
 ----------------------------
+
 TAG FREQUENCY:
 $TAG_FREQUENCY
 
@@ -238,8 +310,10 @@ FOCUS AREAS THIS WEEK:
 $FOCUS_AREAS
 
 ===========================================
+
 WEEKLY REFLECTION:
 ------------------
+
 How did you do with your focus areas this week?
 
 
@@ -256,8 +330,8 @@ Key insights or lessons learned:
 EOF
 
 echo "Weekly review created: $FILE"
-echo "Opening in default editor..."
+echo "Opening in vim..."
 
-${EDITOR:-vim} "$FILE"
+vim "$FILE"
 
 echo "Weekly review complete!"
