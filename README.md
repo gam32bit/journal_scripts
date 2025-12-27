@@ -2,7 +2,7 @@
 
 > ⚠️ **Work in Progress** - This system is actively being developed and may change.
 
-A Python-based personal productivity system for weekly planning, daily journaling, and reflection.
+A Python-based personal journaling system for weekly planning, daily journaling, and reflection.
 
 ## Overview
 
@@ -65,9 +65,9 @@ You can also run scripts directly:
 j-plan.py
 ```
 
-Creates a template with:
-- Tasks for the week (checkbox format)
-- Focus areas (mood/habits to track)
+Pulls from last week and prompts you for:
+- Mindful eating intentions
+- Focus areas 
 
 #### Daily Journal
 
@@ -76,10 +76,11 @@ j-daily.py
 ```
 
 Creates a daily entry that:
-- Pulls incomplete tasks from your weekly plan
+- Prompts you for how many hours you slept
+- Prompts you to reflect on mindful eating habits from the previous day
 - Shows your focus areas as reminders
-- Tracks sleep (O/−/X) and eating reflections
-- Syncs completed tasks back to weekly plan when you save
+- Opens default editor to create entry
+- auto-tags entry based on emotions list and prompts user to add more
 
 #### Weekly Review (Saturdays)
 
@@ -91,30 +92,9 @@ Aggregates the week's data:
 - Sleep score average and daily breakdown
 - Tag frequency and timeline
 - Eating reflections
-- Task completion status
-- Reflection prompts
+- Prompts user to reflect on how well focus areas went
 
-## Format Reference
 
-### Tags
-```
-## Tags: work, sleep, anxiety
-```
-
-### Sleep Score
-```
-## Sleep quality: O
-```
-- `O` = Good (1.0)
-- `-` = Decent (0.5)
-- `X` = Bad (0.0)
-
-### Task Completion
-Mark tasks complete in your daily journal by changing `[ ]` to `[x]`:
-```
-## Weekly tasks remaining:
-- [x] Finish project proposal
-- [ ] Call mom
 ```
 
 ## Configuration
