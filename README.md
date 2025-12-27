@@ -6,13 +6,13 @@ A Python-based personal productivity system for weekly planning, daily journalin
 
 ## Overview
 
-This system connects weekly intentions with daily practice through four scripts:
+This system connects weekly intentions with daily practice through an interactive menu or individual scripts:
 
 | Script | Purpose | When to use |
 |--------|---------|-------------|
-| `j-plan.py` | Create weekly plan with tasks, focus areas, and writing prompts | Sunday |
+| `journal.py` | Interactive menu to access all journal commands | Anytime |
+| `j-plan.py` | Create weekly plan with tasks and focus areas | Sunday |
 | `j-daily.py` | Daily journal with tasks pulled from weekly plan | Daily |
-| `j-prompt.py` | Daily writing entry with prompts from weekly plan | As needed |
 | `j-review.py` | Aggregate the week's data into a review document | Saturday |
 
 ## File Structure
@@ -26,7 +26,6 @@ Journal entries are stored in `~/Journal/` organized by year and month:
         ├── weekly-2025-12-14.md
         ├── daily-2025-12-15.md
         ├── daily-2025-12-16.md
-        ├── prompt-2025-12-15.md
         └── review-2025-12-20.md
 ```
 
@@ -37,7 +36,7 @@ Journal entries are stored in `~/Journal/` organized by year and month:
 git clone git@github.com:gam32bit/journal_scripts.git ~/scripts
 
 # Make entry points executable
-chmod +x ~/scripts/j-*.py
+chmod +x ~/scripts/journal.py ~/scripts/j-*.py
 
 # Add to PATH (add to ~/.bashrc)
 export PATH="$HOME/scripts:$PATH"
@@ -45,7 +44,22 @@ export PATH="$HOME/scripts:$PATH"
 
 ## Usage
 
-### Weekly Planning (Sundays)
+### Interactive Menu (Recommended)
+
+```bash
+journal.py
+```
+
+Launches an interactive menu where you can:
+- Create a weekly plan
+- Create a daily journal entry
+- Generate a weekly review
+
+### Individual Scripts
+
+You can also run scripts directly:
+
+#### Weekly Planning (Sundays)
 
 ```bash
 j-plan.py
@@ -54,9 +68,8 @@ j-plan.py
 Creates a template with:
 - Tasks for the week (checkbox format)
 - Focus areas (mood/habits to track)
-- Writing prompts
 
-### Daily Journal
+#### Daily Journal
 
 ```bash
 j-daily.py
@@ -68,17 +81,7 @@ Creates a daily entry that:
 - Tracks sleep (O/−/X) and eating reflections
 - Syncs completed tasks back to weekly plan when you save
 
-### Daily Writing Prompt
-
-```bash
-j-prompt.py
-```
-
-Creates a writing entry with:
-- Available prompts from your weekly plan
-- Space to select today's prompt and write
-
-### Weekly Review (Saturdays)
+#### Weekly Review (Saturdays)
 
 ```bash
 j-review.py
@@ -88,7 +91,6 @@ Aggregates the week's data:
 - Sleep score average and daily breakdown
 - Tag frequency and timeline
 - Eating reflections
-- Writing excerpts
 - Task completion status
 - Reflection prompts
 
