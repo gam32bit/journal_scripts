@@ -14,10 +14,12 @@ SECTION_ALIASES = {
     "focus areas": "focus",
     "focus areas (mood/habits)": "focus",
     "focus": "focus",
+    "eating intention": "eating_intention",
 
     # Daily journal sections
     "sleep quality": "sleep",
     "sleep": "sleep",
+    "sleep hours": "sleep_hours",
     "yesterday's eating reflection": "eating",
     "eating reflection": "eating",
     "eating": "eating",
@@ -97,16 +99,17 @@ class ParsedFile:
     filepath: Path
     sections: dict[str, list[str]] = field(default_factory=dict)
     raw_lines: list[str] = field(default_factory=list)
-    
+    front_matter: dict[str, str] = field(default_factory=dict)
+
     def get_section(self, name: str) -> list[str]:
         """Get section content by canonical name."""
         return self.sections.get(name, [])
-    
+
     def get_section_text(self, name: str) -> str:
         """Get section as joined text, stripped."""
         lines = self.get_section(name)
         return "\n".join(lines).strip()
-    
+
     def get_list_items(self, name: str) -> list[str]:
         """Get section as list items (lines starting with -)."""
         items = []
@@ -117,6 +120,10 @@ class ParsedFile:
                 if item:  # Skip empty items
                     items.append(item)
         return items
+
+    def get_front_matter(self, key: str) -> str | None:
+        """Get a value from the YAML front matter."""
+        return self.front_matter.get(key)
     
     def get_checked_items(self, name: str) -> tuple[list[str], list[str]]:
         """
@@ -149,15 +156,26 @@ class ParsedFile:
         return checked, unchecked
     
     def get_tags(self) -> list[str]:
-        """Extract tags from the tags section."""
+        """Extract tags from the front matter or tags section."""
+        # First try front matter
+        fm_tags = self.get_front_matter("tags")
+        if fm_tags:
+            # Parse the list format: [tag1, tag2, tag3]
+            fm_tags = fm_tags.strip()
+            if fm_tags.startswith("[") and fm_tags.endswith("]"):
+                fm_tags = fm_tags[1:-1]
+            tags = [tag.strip().lower() for tag in fm_tags.split(",") if tag.strip()]
+            return tags
+
+        # Fall back to tags section
         text = self.get_section_text("tags")
         if not text:
             return []
-        
+
         # Handle "Tags: tag1, tag2, tag3" format
         if ":" in text.split("\n")[0]:
             text = text.split(":", 1)[1]
-        
+
         # Split by comma, clean up
         tags = []
         for tag in text.replace("\n", ",").split(","):
@@ -166,8 +184,16 @@ class ParsedFile:
             cleaned = cleaned.lstrip("#").strip()
             if cleaned:
                 tags.append(cleaned)
-        
+
         return tags
+
+    def get_sleep_hours(self) -> str | None:
+        """Extract sleep hours from front matter."""
+        return self.get_front_matter("sleep_hours")
+
+    def get_eating_reflection(self) -> str | None:
+        """Extract eating reflection from front matter."""
+        return self.get_front_matter("eating_reflection")
     
     def get_sleep_score(self) -> str | None:
         """Extract sleep score (X, -, or O)."""
@@ -200,20 +226,42 @@ def parse_file(filepath: Path) -> ParsedFile | None:
     """
     if not filepath.exists():
         return None
-    
+
     result = ParsedFile(filepath=filepath)
-    
+
     try:
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
             result.raw_lines = f.readlines()
     except Exception as e:
         print(f"Warning: Could not read {filepath}: {e}")
         return None
-    
+
+    # Parse YAML front matter if present
+    in_front_matter = False
+    front_matter_lines = []
+    content_start_idx = 0
+
+    if result.raw_lines and result.raw_lines[0].strip() == "---":
+        in_front_matter = True
+        content_start_idx = 1
+
+        for i in range(1, len(result.raw_lines)):
+            line = result.raw_lines[i]
+            if line.strip() == "---":
+                content_start_idx = i + 1
+                break
+            front_matter_lines.append(line)
+
+        # Parse front matter lines
+        for line in front_matter_lines:
+            if ":" in line:
+                key, value = line.split(":", 1)
+                result.front_matter[key.strip()] = value.strip()
+
     current_section = None
     current_content = []
-    
-    for line in result.raw_lines:
+
+    for line in result.raw_lines[content_start_idx:]:
         # Skip separators
         if is_separator(line):
             continue

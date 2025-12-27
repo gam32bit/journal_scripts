@@ -4,13 +4,63 @@ Daily Journal - Create daily journal entry.
 """
 
 import sys
+import re
 from datetime import date
 from pathlib import Path
 
 # Add parent dir to path for local development
 sys.path.insert(0, str(Path(__file__).parent))
 
-from journal import config, parser, templates, writer
+from journal import config, parser, writer
+
+
+def load_emotion_tags() -> set[str]:
+    """Load emotion tags from the tags file."""
+    tags_file = Path(__file__).parent / "emotion_tags.txt"
+    if not tags_file.exists():
+        return set()
+
+    with open(tags_file, "r", encoding="utf-8") as f:
+        return {line.strip().lower() for line in f if line.strip()}
+
+
+def detect_tags_in_text(text: str, emotion_tags: set[str]) -> list[str]:
+    """Detect emotion tags in text, including variations."""
+    detected = set()
+    text_lower = text.lower()
+
+    # Split text into words, removing punctuation
+    words = re.findall(r'\b\w+\b', text_lower)
+
+    for word in words:
+        # Check exact match
+        if word in emotion_tags:
+            detected.add(word)
+            continue
+
+        # Check if word is a variation of a tag
+        for tag in emotion_tags:
+            # Handle common variations
+            # e.g., "enjoying" -> "joy", "stressed" -> "stress"
+            if tag in word or word in tag:
+                # Additional check to avoid false positives
+                if abs(len(word) - len(tag)) <= 3:  # Similar length
+                    detected.add(tag)
+
+    return sorted(list(detected))
+
+
+def get_eating_intention(today: date) -> str | None:
+    """Get eating intention from weekly plan."""
+    weekly_path = config.weekly_path(today)
+    if not weekly_path.exists():
+        return None
+
+    parsed = parser.parse_file(weekly_path)
+    if not parsed:
+        return None
+
+    return parsed.get_section_text("eating_intention")
 
 
 def main():
@@ -20,40 +70,129 @@ def main():
     # Check if already exists
     if filepath.exists():
         print(f"Today's journal already exists: {filepath}")
-        print("Opening existing file...")
-        writer.open_in_editor(filepath)
         return
 
-    # Find weekly plan
-    weekly_path = config.weekly_path(today)
-    weekly_file = weekly_path if weekly_path.exists() else None
+    print("=== Daily Journal Entry ===\n")
 
-    # Get data from weekly plan
+    # Get sleep hours
+    sleep_hours = input("How many hours did you sleep last night? ").strip()
+
+    # Get eating intention from weekly plan
+    print("\n--- This Week's Eating Intention ---")
+    eating_intention = get_eating_intention(today)
+    if eating_intention:
+        print(eating_intention)
+    else:
+        print("No eating intention found for this week.")
+
+    # Get eating reflection
+    print("\n--- Today's Eating Reflection ---")
+    eating_reflection = input("Enter your eating reflection for today: ").strip()
+
+    # Find weekly plan for focus areas
+    weekly_path = config.weekly_path(today)
     focus_areas = []
 
-    if weekly_file:
-        print(f"Found weekly plan: {weekly_file}")
-
-        parsed = parser.parse_file(weekly_file)
+    if weekly_path.exists():
+        parsed = parser.parse_file(weekly_path)
         if parsed:
             focus_areas = parsed.get_list_items("focus")
 
-        print(f"  {len(focus_areas)} focus areas")
-    else:
-        print("No weekly plan found for this week.")
+    # Create initial journal template
+    focus_str = "\n".join(f"- {area}" for area in focus_areas) if focus_areas else "(No focus areas defined)"
 
-    # Create daily journal
-    content = templates.daily_journal_template(
-        today,
-        focus_areas,
-        str(weekly_file) if weekly_file else None,
-    )
+    content = f"""---
+sleep_hours: {sleep_hours}
+eating_reflection: {eating_reflection}
+tags: []
+---
+
+# Daily Journal
+Date: {today.strftime("%A, %B %d, %Y")}
+
+## Focus areas:
+{focus_str}
+
+---
+
+## Journal entry:
+
+"""
+
+    # Write initial file
     writer.write_file(filepath, content)
 
-    print("Opening in editor...")
+    # Open in editor for user to write entry
+    print("\nOpening editor for journal entry...")
     writer.open_in_editor(filepath)
 
-    print("Journal entry saved!")
+    # After editor closes, read the file and detect tags
+    print("\n--- Tag Detection ---")
+    if not filepath.exists():
+        print("Journal file not found. Exiting.")
+        return
+
+    # Read the journal content
+    file_content = filepath.read_text(encoding="utf-8")
+
+    # Extract the journal entry section
+    parsed = parser.parse_file(filepath)
+    if parsed:
+        journal_text = parsed.get_section_text("journal")
+    else:
+        journal_text = ""
+
+    # Print the entry
+    print("\nYour journal entry:")
+    print("-" * 50)
+    print(journal_text)
+    print("-" * 50)
+
+    # Detect tags
+    emotion_tags = load_emotion_tags()
+    detected_tags = detect_tags_in_text(journal_text, emotion_tags)
+
+    if detected_tags:
+        print(f"\nDetected tags: {', '.join(detected_tags)}")
+        confirm = input("Use these tags? (y/n): ").strip().lower()
+
+        if confirm == 'y':
+            tags = detected_tags
+        else:
+            print("\nYour journal entry:")
+            print("-" * 50)
+            print(journal_text)
+            print("-" * 50)
+            additional = input("\nEnter additional tags (comma-separated): ").strip()
+            if additional:
+                additional_tags = [tag.strip().lower() for tag in additional.split(",") if tag.strip()]
+                tags = detected_tags + additional_tags
+            else:
+                tags = detected_tags
+    else:
+        print("No emotion tags detected.")
+        add_tags = input("Would you like to add tags manually? (y/n): ").strip().lower()
+
+        if add_tags == 'y':
+            print("\nYour journal entry:")
+            print("-" * 50)
+            print(journal_text)
+            print("-" * 50)
+            manual_tags = input("\nEnter tags (comma-separated): ").strip()
+            tags = [tag.strip().lower() for tag in manual_tags.split(",") if tag.strip()]
+        else:
+            tags = []
+
+    # Update the front matter with tags
+    tags_str = ", ".join(tags)
+    updated_content = re.sub(
+        r'tags: \[\]',
+        f'tags: [{tags_str}]',
+        file_content
+    )
+
+    filepath.write_text(updated_content, encoding="utf-8")
+    print(f"\nJournal entry saved with {len(tags)} tags!")
 
 
 if __name__ == "__main__":
