@@ -11,36 +11,20 @@ from dataclasses import dataclass, field
 # Section header patterns - normalize these to canonical names
 SECTION_ALIASES = {
     # Weekly plan sections
-    "tasks for this week": "tasks",
-    "tasks": "tasks",
-    "weekly tasks": "tasks",
     "focus areas": "focus",
     "focus areas (mood/habits)": "focus",
     "focus": "focus",
-    "writing prompts": "prompts",
-    "prompts": "prompts",
-    "completed_tasks": "completed",
-    "[completed_tasks]": "completed",
-    
+
     # Daily journal sections
-    "weekly tasks remaining": "tasks_remaining",
     "sleep quality": "sleep",
     "sleep": "sleep",
     "yesterday's eating reflection": "eating",
     "eating reflection": "eating",
     "eating": "eating",
-    "tasks completed yesterday": "tasks_done",
-    "tasks completed": "tasks_done",
-    "completed yesterday": "tasks_done",
     "journal entry": "journal",
     "journal": "journal",
     "tags": "tags",
-    
-    # Daily prompt sections
-    "available prompts this week": "available_prompts",
-    "today's prompt": "todays_prompt",
-    "writing": "writing",
-    
+
     # Review sections
     "weekly reflection": "reflection",
 }
@@ -289,22 +273,10 @@ def find_weekly_file(d) -> Path | None:
 def find_daily_files(d) -> list[Path]:
     """Find all daily journal files for the week containing date d."""
     from . import config
-    
+
     files = []
     for day in config.get_week_dates(d):
         path = config.daily_path(day)
-        if path.exists():
-            files.append(path)
-    return files
-
-
-def find_prompt_files(d) -> list[Path]:
-    """Find all prompt files for the week containing date d."""
-    from . import config
-    
-    files = []
-    for day in config.get_week_dates(d):
-        path = config.prompt_path(day)
         if path.exists():
             files.append(path)
     return files
