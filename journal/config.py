@@ -39,11 +39,6 @@ def daily_path(d: date) -> Path:
     return _journal_path(d, "daily")
 
 
-def prompt_path(d: date) -> Path:
-    """Path for daily writing prompt."""
-    return _journal_path(d, "prompt")
-
-
 def weekly_path(d: date) -> Path:
     """Path for weekly plan (uses Sunday of that week)."""
     sunday = get_sunday(d)

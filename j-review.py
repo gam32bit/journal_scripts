@@ -36,18 +36,16 @@ def main():
         return
     
     print(f"Generating weekly review...")
-    
+
     # Get week dates
     week_dates = config.get_week_dates(today)
     day_names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    
+
     # Find files
     daily_files = parser.find_daily_files(today)
-    prompt_files = parser.find_prompt_files(today)
     weekly_path = config.weekly_path(today)
-    
+
     print(f"  Found {len(daily_files)} daily entries")
-    print(f"  Found {len(prompt_files)} writing entries")
     
     # Aggregate sleep data
     sleep_scores = []  # (day_name, score)
@@ -82,7 +80,7 @@ def main():
     
     # Aggregate eating reflections
     eating_reflections = []
-    
+
     for d in week_dates:
         daily_path = config.daily_path(d)
         parsed = parser.parse_file(daily_path)
@@ -90,57 +88,24 @@ def main():
             text = parsed.get_section_text("eating")
             if text:
                 eating_reflections.append((d.strftime("%Y-%m-%d"), text))
-    
-    # Aggregate writing excerpts
-    writing_excerpts = []
-    
-    for d in week_dates:
-        prompt_path = config.prompt_path(d)
-        parsed = parser.parse_file(prompt_path)
-        if parsed:
-            prompt = parsed.get_section_text("todays_prompt")
-            writing = parsed.get_section_text("writing")
-            if prompt or writing:
-                # Get first 3 lines of writing as excerpt
-                excerpt = "\n".join(writing.split("\n")[:3]) if writing else ""
-                writing_excerpts.append((d.strftime("%Y-%m-%d"), prompt, excerpt))
-    
-    # Get task status from weekly plan
-    completed_tasks = []
-    incomplete_tasks = []
+
+    # Get focus areas from weekly plan
     focus_areas = []
-    
+
     if weekly_path.exists():
         parsed = parser.parse_file(weekly_path)
         if parsed:
-            # Get completed from completed section
-            for line in parsed.get_section("completed"):
-                stripped = line.strip()
-                if stripped:
-                    completed_tasks.append(stripped)
-            
-            # Get checked tasks too
-            checked, unchecked = parsed.get_checked_items("tasks")
-            for task in checked:
-                if task not in completed_tasks:
-                    completed_tasks.append(task)
-            
-            incomplete_tasks = unchecked
             focus_areas = parsed.get_list_items("focus")
     
     # Generate review
     content = templates.weekly_review_template(
         today,
         len(daily_files),
-        len(prompt_files),
         sleep_avg,
         sleep_scores,
         eating_reflections,
         tag_frequency,
         tag_timeline,
-        writing_excerpts,
-        completed_tasks,
-        incomplete_tasks,
         focus_areas,
     )
     
