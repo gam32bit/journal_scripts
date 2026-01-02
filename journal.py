@@ -14,11 +14,12 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 def show_menu():
     """Display the main menu."""
-    print("\n=== Journal Menu ===")
+    print("\n=== Weekly Rhythm ===")
     print("1. Weekly Plan")
     print("2. Daily Entry")
     print("3. Weekly Review")
-    print("4. Monthly Review")
+    print("4. Monthly Plan")
+    print("5. Monthly Review")
     print("0. Exit")
     print()
 
@@ -28,7 +29,7 @@ def main():
 
     while True:
         show_menu()
-        choice = input("Select an option (0-4): ").strip()
+        choice = input("Select an option (0-5): ").strip()
 
         if choice == "1":
             print("\n--- Weekly Plan ---")
@@ -43,6 +44,10 @@ def main():
             subprocess.run([sys.executable, str(script_dir / "j-review.py")])
             print()
         elif choice == "4":
+            print("\n--- Monthly Plan ---")
+            subprocess.run([sys.executable, str(script_dir / "j-month-plan.py")])
+            print()
+        elif choice == "5":
             print("\n--- Monthly Review ---")
             subprocess.run([sys.executable, str(script_dir / "j-monthly.py")])
             print()
@@ -50,7 +55,7 @@ def main():
             print("Goodbye!")
             break
         else:
-            print("Invalid choice. Please select 0-4.")
+            print("Invalid choice. Please select 0-5.")
 
 
 if __name__ == "__main__":

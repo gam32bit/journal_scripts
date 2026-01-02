@@ -11,31 +11,43 @@ from dataclasses import dataclass, field
 # Section header patterns - normalize these to canonical names
 SECTION_ALIASES = {
     # Weekly plan sections
-    "focus areas": "focus",
-    "focus areas (mood/habits)": "focus",
-    "focus": "focus",
+    "what's coming up": "coming_up",
+    "how i want to approach this week": "approach",
+    "freetime focuses": "freetime",
     "eating intention": "eating_intention",
+
+    # Legacy support
+    "focus areas": "freetime",  # Map old "focus areas" to "freetime"
+    "focus areas (mood/habits)": "freetime",
+    "focus": "freetime",
 
     # Daily journal sections
     "sleep quality": "sleep",
     "sleep": "sleep",
     "sleep hours": "sleep_hours",
+    "mindful eating": "mindful_eating",
     "yesterday's eating reflection": "eating",
     "eating reflection": "eating",
     "eating": "eating",
     "journal entry": "journal",
     "journal": "journal",
-    "tags": "tags",
+    "summary": "summary",
 
     # Review sections
     "weekly reflection": "reflection",
+    "weekly summary": "weekly_summary",
+    "daily summaries": "daily_summaries",
+
+    # Monthly plan sections
+    "what's coming up this month": "coming_up_month",
+    "themes or intentions": "themes",
 
     # Monthly review sections
     "consistency": "consistency",
-    "emotional landscape": "emotional_landscape",
     "focus areas this month": "focus_areas_month",
     "eating intentions this month": "eating_intentions_month",
     "monthly reflection": "monthly_reflection",
+    "monthly summary": "monthly_summary",
 }
 
 
@@ -162,45 +174,32 @@ class ParsedFile:
         
         return checked, unchecked
     
-    def get_tags(self) -> list[str]:
-        """Extract tags from the front matter or tags section."""
-        # First try front matter
-        fm_tags = self.get_front_matter("tags")
-        if fm_tags:
-            # Parse the list format: [tag1, tag2, tag3]
-            fm_tags = fm_tags.strip()
-            if fm_tags.startswith("[") and fm_tags.endswith("]"):
-                fm_tags = fm_tags[1:-1]
-            tags = [tag.strip().lower() for tag in fm_tags.split(",") if tag.strip()]
-            return tags
+    def get_summary_bullets(self) -> list[str]:
+        """Get summary bullets from front matter or section."""
+        # Try front matter first
+        fm_summary = self.get_front_matter("summary")
+        if fm_summary:
+            # Parse list format: [bullet1, bullet2, bullet3]
+            fm_summary = fm_summary.strip()
+            if fm_summary.startswith("[") and fm_summary.endswith("]"):
+                fm_summary = fm_summary[1:-1]
+            bullets = [bullet.strip() for bullet in fm_summary.split(",") if bullet.strip()]
+            return bullets
 
-        # Fall back to tags section
-        text = self.get_section_text("tags")
-        if not text:
-            return []
-
-        # Handle "Tags: tag1, tag2, tag3" format
-        if ":" in text.split("\n")[0]:
-            text = text.split(":", 1)[1]
-
-        # Split by comma, clean up
-        tags = []
-        for tag in text.replace("\n", ",").split(","):
-            cleaned = tag.strip().lower()
-            # Remove # if present
-            cleaned = cleaned.lstrip("#").strip()
-            if cleaned:
-                tags.append(cleaned)
-
-        return tags
+        # Fall back to section
+        return self.get_list_items("summary")
 
     def get_sleep_hours(self) -> str | None:
         """Extract sleep hours from front matter."""
         return self.get_front_matter("sleep_hours")
 
     def get_eating_reflection(self) -> str | None:
-        """Extract eating reflection from front matter."""
+        """Extract eating reflection from front matter (legacy)."""
         return self.get_front_matter("eating_reflection")
+
+    def get_mindful_eating(self) -> str | None:
+        """Extract mindful eating moment from front matter."""
+        return self.get_front_matter("mindful_eating")
     
     def get_sleep_score(self) -> str | None:
         """Extract sleep score (X, -, or O)."""

@@ -7,7 +7,6 @@ Run at the end of each month to reflect on your month.
 import sys
 from datetime import date, timedelta
 from pathlib import Path
-from collections import Counter
 import calendar
 
 # Add parent dir to path for local development
@@ -38,9 +37,9 @@ def find_weekly_reviews_for_month(d: date) -> list[Path]:
             saturday = sunday + timedelta(days=6)
             review_file = config.review_path(saturday)
             if review_file.exists():
-                reviews.append(review_file)
+                reviews.append((sunday, review_file))
 
-    return sorted(reviews)
+    return sorted(reviews, key=lambda x: x[0])
 
 
 def find_daily_entries_for_month(d: date) -> list[Path]:
@@ -66,9 +65,9 @@ def find_weekly_plans_for_month(d: date) -> list[Path]:
             weeks_seen.add(sunday)
             weekly_file = config.weekly_path(sunday)
             if weekly_file.exists():
-                plans.append(weekly_file)
+                plans.append((sunday, weekly_file))
 
-    return sorted(plans)
+    return sorted(plans, key=lambda x: x[0])
 
 
 def calculate_sleep_data(d: date) -> dict:
@@ -90,7 +89,6 @@ def calculate_sleep_data(d: date) -> dict:
         return {
             "average": 0.0,
             "trend": 0.0,
-            "daily_values": []
         }
 
     avg = sum(sleep_hours) / len(sleep_hours)
@@ -116,73 +114,40 @@ def calculate_sleep_data(d: date) -> dict:
     return {
         "average": avg,
         "trend": trend,
-        "daily_values": sleep_hours
     }
 
 
-def aggregate_tags(d: date) -> dict:
-    """Aggregate tag data for the month."""
+def count_mindful_eating_days(d: date) -> int:
+    """Count days with mindful eating logged."""
     daily_entries = find_daily_entries_for_month(d)
+    count = 0
 
-    tag_counter = Counter()
     for entry in daily_entries:
         parsed = parser.parse_file(entry)
         if parsed:
-            tags = parsed.get_tags()
-            tag_counter.update(tags)
+            mindful = parsed.get_mindful_eating()
+            if mindful and mindful.strip():
+                count += 1
 
-    # Get previous month's tags for comparison
-    prev_month_date = d.replace(day=1) - timedelta(days=1)
-    prev_entries = find_daily_entries_for_month(prev_month_date)
-    prev_tag_counter = Counter()
-
-    for entry in prev_entries:
-        parsed = parser.parse_file(entry)
-        if parsed:
-            tags = parsed.get_tags()
-            prev_tag_counter.update(tags)
-
-    # Find new and dropped tags
-    current_tags = set(tag_counter.keys())
-    prev_tags = set(prev_tag_counter.keys())
-
-    new_tags = current_tags - prev_tags
-    dropped_tags = prev_tags - current_tags
-
-    return {
-        "tag_counter": tag_counter,
-        "new_tags": sorted(new_tags),
-        "dropped_tags": sorted(dropped_tags)
-    }
+    return count
 
 
-def collect_focus_areas(d: date) -> list[str]:
-    """Collect all focus areas from weekly plans in the month."""
+def collect_freetime_focuses(d: date) -> list[str]:
+    """Collect all unique freetime focuses from weekly plans in the month."""
     weekly_plans = find_weekly_plans_for_month(d)
 
-    focus_areas = []
-    for plan in weekly_plans:
+    focuses = []
+    seen = set()
+    for _, plan in weekly_plans:
         parsed = parser.parse_file(plan)
         if parsed:
-            areas = parsed.get_list_items("focus")
-            focus_areas.extend(areas)
+            plan_focuses = parsed.get_list_items("freetime")
+            for focus in plan_focuses:
+                if focus not in seen:
+                    focuses.append(focus)
+                    seen.add(focus)
 
-    return focus_areas
-
-
-def collect_eating_intentions(d: date) -> list[str]:
-    """Collect eating intentions from weekly plans in the month."""
-    weekly_plans = find_weekly_plans_for_month(d)
-
-    intentions = []
-    for plan in weekly_plans:
-        parsed = parser.parse_file(plan)
-        if parsed:
-            intention = parsed.get_section_text("eating_intention")
-            if intention:
-                intentions.append(intention)
-
-    return intentions
+    return focuses
 
 
 def calculate_consistency(d: date) -> dict:
@@ -198,151 +163,19 @@ def calculate_consistency(d: date) -> dict:
     }
 
 
-def print_summary_tables(d: date):
-    """Print summary tables to terminal."""
-    month_name = d.strftime("%B %Y")
+def get_multi_line_input(prompt: str) -> list[str]:
+    """Get multi-line bullet point input from user."""
+    print(f"\n{prompt}")
+    print("(Enter bullet points one per line, press Enter on empty line to finish)")
 
-    print(f"\n=== Monthly Review for {month_name} ===\n")
+    items = []
+    while True:
+        line = input("- ").strip()
+        if not line:
+            break
+        items.append(line)
 
-    # Consistency
-    consistency = calculate_consistency(d)
-    print("=== Consistency ===")
-    print(f"Daily entries: {consistency['daily_entries']}")
-    print(f"Weekly plans: {consistency['weekly_plans']}")
-    print(f"Weekly reviews: {consistency['weekly_reviews']}")
-
-    # Sleep
-    sleep_data = calculate_sleep_data(d)
-    print("\n=== Sleep ===")
-    print(f"Monthly average: {sleep_data['average']:.1f} hours")
-    if sleep_data['trend'] != 0.0:
-        trend_sign = "+" if sleep_data['trend'] > 0 else ""
-        print(f"Trend: {trend_sign}{sleep_data['trend']:.1f} vs previous month")
-    else:
-        print("Trend: No previous month data")
-
-    # Tags
-    tag_data = aggregate_tags(d)
-    print("\n=== Emotional Landscape ===")
-    print("Top 10 tags:")
-    for tag, count in tag_data['tag_counter'].most_common(10):
-        print(f"  {tag}: {count}")
-
-    if tag_data['new_tags']:
-        print("\nNew this month:")
-        for tag in tag_data['new_tags']:
-            print(f"  - {tag}")
-
-    if tag_data['dropped_tags']:
-        print("\nDropped off:")
-        for tag in tag_data['dropped_tags']:
-            print(f"  - {tag}")
-
-    # Focus areas
-    focus_areas = collect_focus_areas(d)
-    print("\n=== Focus Areas This Month ===")
-    if focus_areas:
-        # Get unique focus areas while preserving order
-        unique_areas = []
-        seen = set()
-        for area in focus_areas:
-            if area not in seen:
-                unique_areas.append(area)
-                seen.add(area)
-
-        for area in unique_areas:
-            print(f"  - {area}")
-    else:
-        print("  No focus areas defined")
-
-    # Eating intentions
-    intentions = collect_eating_intentions(d)
-    print("\n=== Eating Intentions This Month ===")
-    if intentions:
-        for i, intention in enumerate(intentions, 1):
-            print(f"  Week {i}: {intention}")
-    else:
-        print("  No eating intentions recorded")
-
-    return {
-        "consistency": consistency,
-        "sleep": sleep_data,
-        "tags": tag_data,
-        "focus_areas": focus_areas,
-        "intentions": intentions
-    }
-
-
-def generate_monthly_review_content(d: date, data: dict, reflection: str, one_word: str) -> str:
-    """Generate the monthly review markdown content."""
-    month_name = d.strftime("%B %Y")
-
-    content = f"""# Monthly Review
-Month: {month_name}
-
-## Consistency
-- Daily entries: {data['consistency']['daily_entries']}
-- Weekly plans: {data['consistency']['weekly_plans']}
-- Weekly reviews: {data['consistency']['weekly_reviews']}
-
-## Sleep
-- Monthly average: {data['sleep']['average']:.1f} hours
-"""
-
-    if data['sleep']['trend'] != 0.0:
-        trend_sign = "+" if data['sleep']['trend'] > 0 else ""
-        content += f"- Trend: {trend_sign}{data['sleep']['trend']:.1f} vs previous month\n"
-    else:
-        content += "- Trend: No previous month data\n"
-
-    content += "\n## Emotional Landscape\n### Top tags:\n"
-    for tag, count in data['tags']['tag_counter'].most_common(10):
-        content += f"- {tag}: {count}\n"
-
-    if data['tags']['new_tags']:
-        content += "\n### New this month:\n"
-        for tag in data['tags']['new_tags']:
-            content += f"- {tag}\n"
-
-    if data['tags']['dropped_tags']:
-        content += "\n### Dropped off:\n"
-        for tag in data['tags']['dropped_tags']:
-            content += f"- {tag}\n"
-
-    content += "\n## Focus Areas This Month\n"
-    if data['focus_areas']:
-        # Get unique focus areas
-        unique_areas = []
-        seen = set()
-        for area in data['focus_areas']:
-            if area not in seen:
-                unique_areas.append(area)
-                seen.add(area)
-
-        for area in unique_areas:
-            content += f"- {area}\n"
-    else:
-        content += "No focus areas defined\n"
-
-    content += "\n## Eating Intentions This Month\n"
-    if data['intentions']:
-        for i, intention in enumerate(data['intentions'], 1):
-            content += f"- Week {i}: {intention}\n"
-    else:
-        content += "No eating intentions recorded\n"
-
-    content += f"""
----
-
-## Monthly Reflection
-
-Month in one word: {one_word}
-
-Narrative summary:
-{reflection}
-"""
-
-    return content
+    return items
 
 
 def main():
@@ -355,27 +188,173 @@ def main():
         if action != 'recreate':
             return
 
-    # Print summary tables and collect data
-    data = print_summary_tables(today)
+    month_name = today.strftime("%B %Y")
 
-    # Prompt for reflection
-    print("\n--- Monthly Reflection ---")
-    one_word = input("Month in one word: ").strip()
-    print("Write a brief narrative summary of this month (2-3 sentences):")
-    print("(Press Ctrl+D or Ctrl+Z when finished)")
+    print(f"\n=== Monthly Review for {month_name} ===\n")
 
-    narrative_lines = []
-    try:
-        while True:
-            line = input()
-            narrative_lines.append(line)
-    except EOFError:
-        pass
+    # Consistency
+    consistency = calculate_consistency(today)
+    print("=== Consistency ===")
+    print(f"Daily entries: {consistency['daily_entries']}")
+    print(f"Weekly plans: {consistency['weekly_plans']}")
+    print(f"Weekly reviews: {consistency['weekly_reviews']}")
 
-    narrative = "\n".join(narrative_lines).strip()
+    # What happened this month (from weekly plans)
+    print("\n=== What happened this month ===")
+    weekly_plans = find_weekly_plans_for_month(today)
 
-    # Generate and save content
-    content = generate_monthly_review_content(today, data, narrative, one_word)
+    weekly_coming_up = []
+    if weekly_plans:
+        for sunday, plan in weekly_plans:
+            parsed = parser.parse_file(plan)
+            if parsed:
+                coming_up = parsed.get_list_items("coming_up")
+                if coming_up:
+                    weekly_coming_up.append((sunday, coming_up))
+                    print(f"\nWeek of {sunday.strftime('%B %d')}:")
+                    for item in coming_up:
+                        print(f"  - {item}")
+    else:
+        print("  (No weekly plans found)")
+
+    # All daily summaries organized by week
+    print("\n=== All daily summaries ===")
+    weekly_daily_summaries = {}
+
+    for sunday, _ in weekly_plans:
+        week_dates = config.get_week_dates(sunday)
+        day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+        week_summaries = []
+        for i, d in enumerate(week_dates):
+            daily_path = config.daily_path(d)
+            if daily_path.exists():
+                parsed = parser.parse_file(daily_path)
+                if parsed:
+                    summaries = parsed.get_summary_bullets()
+                    if summaries:
+                        week_summaries.append((day_names[i], summaries))
+
+        if week_summaries:
+            weekly_daily_summaries[sunday] = week_summaries
+
+    for sunday, summaries in weekly_daily_summaries.items():
+        print(f"\nWeek of {sunday.strftime('%B %d')}:")
+        for day_name, bullets in summaries:
+            print(f"  {day_name}: {', '.join(bullets)}")
+
+    if not weekly_daily_summaries:
+        print("  (No daily summaries found)")
+
+    # Freetime focuses
+    print("\n=== Freetime focuses this month ===")
+    freetime_focuses = collect_freetime_focuses(today)
+    if freetime_focuses:
+        for focus in freetime_focuses:
+            print(f"  - {focus}")
+    else:
+        print("  (No freetime focuses found)")
+
+    # Health
+    print("\n=== Health ===")
+    sleep_data = calculate_sleep_data(today)
+    mindful_eating_days = count_mindful_eating_days(today)
+
+    print(f"Sleep average: {sleep_data['average']:.1f} hours", end="")
+    if sleep_data['trend'] != 0.0:
+        trend_sign = "+" if sleep_data['trend'] > 0 else ""
+        print(f" (trend: {trend_sign}{sleep_data['trend']:.1f} vs last month)")
+    else:
+        print(" (no trend data)")
+
+    print(f"Days with mindful eating logged: {mindful_eating_days}")
+
+    # Weekly summaries
+    print("\n=== Weekly summaries ===")
+    weekly_reviews = find_weekly_reviews_for_month(today)
+    weekly_review_summaries = []
+
+    for sunday, review in weekly_reviews:
+        parsed = parser.parse_file(review)
+        if parsed:
+            summary = parsed.get_list_items("weekly_summary")
+            if summary:
+                weekly_review_summaries.append((sunday, summary))
+                print(f"\nWeek ending {(sunday + timedelta(days=6)).strftime('%B %d')}:")
+                for bullet in summary:
+                    print(f"  - {bullet}")
+
+    if not weekly_review_summaries:
+        print("  (No weekly summaries found)")
+
+    # Offer to open specific weekly reviews
+    if weekly_reviews:
+        print(f"\n--- Weekly Reviews ---")
+        print(f"Found {len(weekly_reviews)} weekly reviews")
+        choice = input("Enter week number to open review (1-N), or press Enter to continue: ").strip()
+
+        if choice.isdigit():
+            week_index = int(choice) - 1
+            if 0 <= week_index < len(weekly_reviews):
+                _, review_path = weekly_reviews[week_index]
+                print(f"Opening weekly review...")
+                writer.open_in_editor(review_path)
+
+    # Prompt for monthly summary
+    monthly_summary = get_multi_line_input("\n=== Monthly Summary ===\nWrite bullets synthesizing the month:")
+
+    # Build the monthly review content
+    content = f"""# Monthly Review
+Month: {month_name}
+
+## Consistency:
+- Daily entries: {consistency['daily_entries']}
+- Weekly plans: {consistency['weekly_plans']}
+- Weekly reviews: {consistency['weekly_reviews']}
+
+## What happened this month:
+"""
+
+    for sunday, coming_up in weekly_coming_up:
+        content += f"\n### Week of {sunday.strftime('%B %d')}\n"
+        for item in coming_up:
+            content += f"- {item}\n"
+
+    content += "\n## All daily summaries:\n"
+
+    for sunday, summaries in weekly_daily_summaries.items():
+        content += f"\n### Week of {sunday.strftime('%B %d')}\n"
+        for day_name, bullets in summaries:
+            content += f"- {day_name}: {', '.join(bullets)}\n"
+
+    content += "\n## Freetime focuses this month:\n"
+    if freetime_focuses:
+        for focus in freetime_focuses:
+            content += f"- {focus}\n"
+    else:
+        content += "(No freetime focuses found)\n"
+
+    content += f"\n## Health:\n"
+    content += f"- Sleep average: {sleep_data['average']:.1f} hours"
+    if sleep_data['trend'] != 0.0:
+        trend_sign = "+" if sleep_data['trend'] > 0 else ""
+        content += f" (trend: {trend_sign}{sleep_data['trend']:.1f} vs last month)\n"
+    else:
+        content += " (no trend data)\n"
+    content += f"- Days with mindful eating logged: {mindful_eating_days}\n"
+
+    content += "\n## Weekly summaries:\n"
+
+    for sunday, summary in weekly_review_summaries:
+        content += f"\n### Week ending {(sunday + timedelta(days=6)).strftime('%B %d')}\n"
+        for bullet in summary:
+            content += f"- {bullet}\n"
+
+    content += "\n## Monthly summary:\n"
+    for bullet in monthly_summary:
+        content += f"- {bullet}\n"
+
+    # Write the file
     writer.write_file(filepath, content)
     print(f"\nMonthly review saved to: {filepath}")
 
