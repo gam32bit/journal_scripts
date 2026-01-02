@@ -6,151 +6,79 @@ Generates content for new entries.
 from datetime import date
 
 
-def weekly_plan_template(d: date) -> str:
+def weekly_plan_template(d: date, coming_up: list[str], approach: str, freetime: list[str], eating_intention: str) -> str:
     """Generate weekly plan template."""
+    coming_up_str = "\n".join(f"- {item}" for item in coming_up) if coming_up else "- "
+    freetime_str = "\n".join(f"- {item}" for item in freetime) if freetime else "- "
+
     return f"""# Weekly Plan
 Week of: {d.strftime("%B %d, %Y")}
 
-## Focus areas:
--
--
+## What's coming up:
+{coming_up_str}
 
+## How I want to approach this week:
+{approach if approach else ""}
+
+## Freetime focuses:
+{freetime_str}
+
+## Eating intention:
+{eating_intention if eating_intention else ""}
 """
 
 
 def daily_journal_template(
     d: date,
-    focus_areas: list[str],
-    weekly_file: str | None = None,
+    sleep_hours: str,
+    freetime_focuses: list[str],
 ) -> str:
     """Generate daily journal template."""
 
-    # Format focus areas
-    if focus_areas:
-        focus_str = "\n".join(f"- {area}" for area in focus_areas)
+    # Format freetime focuses
+    if freetime_focuses:
+        freetime_str = "\n".join(f"- {focus}" for focus in freetime_focuses)
     else:
-        focus_str = "(No focus areas defined)"
+        freetime_str = "(No freetime focuses defined)"
 
-    weekly_ref = f"\n[weekly_file:{weekly_file}]" if weekly_file else ""
-
-    return f"""# Daily Journal
-Date: {d.strftime("%A, %B %d, %Y")}
-
-## Focus areas:
-{focus_str}
-
+    return f"""---
+sleep_hours: {sleep_hours}
+mindful_eating:
 ---
 
-## Sleep quality:
+# Daily Entry
+Date: {d.strftime("%A, %B %d, %Y")}
 
-## Yesterday's eating reflection:
+## Freetime focuses:
+{freetime_str}
 
+---
 
 ## Journal entry:
 
 
-## Tags:
-{weekly_ref}
+---
+
+## Summary:
+-
+-
 """
 
 
-def weekly_review_template(
-    d: date,
-    daily_count: int,
-    sleep_avg: float | None,
-    sleep_scores: list[tuple[str, str | None]],  # (day_name, score)
-    eating_reflections: list[tuple[str, str]],   # (date_str, text)
-    tag_frequency: list[tuple[str, int]],        # (tag, count)
-    tag_timeline: dict[str, list[str]],          # tag -> [day_names]
-    focus_areas: list[str],
-) -> str:
-    """Generate weekly review template."""
-    
-    # Sleep section
-    if sleep_avg is not None:
-        sleep_avg_str = f"{sleep_avg:.2f}"
-    else:
-        sleep_avg_str = "N/A"
-    
-    sleep_detail = []
-    for day_name, score in sleep_scores:
-        score_str = score if score else "-"
-        sleep_detail.append(f"  {day_name}: {score_str}")
-    sleep_detail_str = "\n".join(sleep_detail) if sleep_detail else "  (No data)"
-    
-    # Tag frequency
-    if tag_frequency:
-        max_count = max(count for _, count in tag_frequency)
-        tag_freq_lines = []
-        for tag, count in tag_frequency[:10]:  # Top 10
-            bar = "█" * int((count / max_count) * 20)
-            tag_freq_lines.append(f"  {tag}: {bar} ({count})")
-        tag_freq_str = "\n".join(tag_freq_lines)
-    else:
-        tag_freq_str = "  (No tags recorded)"
-    
-    # Tag timeline
-    if tag_timeline:
-        timeline_lines = [f"  {tag}: {', '.join(days)}" for tag, days in sorted(tag_timeline.items())]
-        tag_timeline_str = "\n".join(timeline_lines)
-    else:
-        tag_timeline_str = "  (No tags recorded)"
-    
-    # Eating reflections
-    if eating_reflections:
-        eating_lines = []
-        for date_str, text in eating_reflections:
-            eating_lines.append(f"[{date_str}]")
-            eating_lines.append(text)
-            eating_lines.append("")
-        eating_str = "\n".join(eating_lines)
-    else:
-        eating_str = "(No eating reflections recorded)"
+def monthly_plan_template(d: date, coming_up: list[str], themes: str, freetime: list[str]) -> str:
+    """Generate monthly plan template."""
+    coming_up_str = "\n".join(f"- {item}" for item in coming_up) if coming_up else "- "
+    freetime_str = "\n".join(f"- {item}" for item in freetime) if freetime else "- "
 
-    # Focus areas
-    if focus_areas:
-        focus_str = "\n".join(f"- {area}" for area in focus_areas)
-    else:
-        focus_str = "(No focus areas defined)"
-    
-    return f"""# Weekly Review
-Week ending: {d.strftime("%B %d, %Y")}
+    return f"""# Monthly Plan
+Month: {d.strftime("%B %Y")}
 
-Daily entries found: {daily_count}
+## What's coming up this month:
+{coming_up_str}
 
-## Sleep analysis:
-Average: {sleep_avg_str} (O=1.0, -=0.5, X=0.0)
+## Themes or intentions:
+{themes if themes else ""}
 
-{sleep_detail_str}
-
-## Emotional landscape (Tags):
-
-Frequency:
-{tag_freq_str}
-
-Timeline:
-{tag_timeline_str}
-
-## Eating reflections:
-{eating_str}
-
-## Focus areas this week:
-{focus_str}
-
----
-
-## Weekly reflection:
-
-How did you do with your focus areas this week?
-
-
-What went well this week?
-
-
-What could be improved?
-
-
-Key insights or lessons learned:
-
-
+## Freetime focuses to prioritize:
+{freetime_str}
 """

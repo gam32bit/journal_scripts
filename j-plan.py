@@ -5,49 +5,44 @@ Run on Sundays to set up your week.
 """
 
 import sys
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 # Add parent dir to path for local development
 sys.path.insert(0, str(Path(__file__).parent))
 
-from journal import config, parser, writer
+from journal import config, templates, writer
 
 
-def get_past_week_eating_reflections(today: date) -> list[tuple[str, str]]:
-    """Get eating reflections from the past week (Sun-Sat)."""
-    # Get the previous week's dates
-    last_week_sunday = config.get_sunday(today) - timedelta(days=7)
-    last_week_dates = [last_week_sunday + timedelta(days=i) for i in range(7)]
+def get_multi_line_input(prompt: str) -> list[str]:
+    """Get multi-line bullet point input from user."""
+    print(f"\n{prompt}")
+    print("(Enter bullet points one per line, press Enter on empty line to finish)")
 
-    reflections = []
-    for d in last_week_dates:
-        daily_path = config.daily_path(d)
-        parsed = parser.parse_file(daily_path)
-        if parsed:
-            text = parsed.get_section_text("eating")
-            if text:
-                reflections.append((d.strftime("%A, %B %d"), text))
+    items = []
+    while True:
+        line = input("- ").strip()
+        if not line:
+            break
+        items.append(line)
 
-    return reflections
+    return items
 
 
-def get_past_focus_reflection(today: date) -> str | None:
-    """Get focus area reflection from the past weekly review."""
-    # Get last week's Saturday (when review would have been done)
-    last_saturday = config.get_sunday(today) - timedelta(days=1)
-    review_path = config.review_path(last_saturday)
+def get_multi_line_text(prompt: str) -> str:
+    """Get multi-line freeform text from user."""
+    print(f"\n{prompt}")
+    print("(Press Ctrl+D or Ctrl+Z when finished)")
 
-    if not review_path.exists():
-        return None
+    lines = []
+    try:
+        while True:
+            line = input()
+            lines.append(line)
+    except EOFError:
+        pass
 
-    parsed = parser.parse_file(review_path)
-    if not parsed:
-        return None
-
-    # Look for the focus reflection section
-    reflection = parsed.get_section_text("reflection")
-    return reflection if reflection else None
+    return "\n".join(lines).strip()
 
 
 def main():
@@ -63,55 +58,21 @@ def main():
 
     print("=== Weekly Plan Setup ===\n")
 
-    # Show eating reflections from past week
-    print("--- Eating Reflections from Past Week ---")
-    eating_reflections = get_past_week_eating_reflections(today)
-    if eating_reflections:
-        for day, reflection in eating_reflections:
-            print(f"\n{day}:")
-            print(f"  {reflection}")
-    else:
-        print("No eating reflections found from last week.")
+    # What's coming up this week?
+    coming_up = get_multi_line_input("What's coming up this week?")
 
-    # Get eating intention for this week
-    print("\n--- Weekly Eating Intention ---")
+    # How do you want to approach this week?
+    approach = get_multi_line_text("\nHow do you want to approach this week?")
+
+    # Freetime focuses
+    freetime = get_multi_line_input("\nWhat are your freetime focuses for this week?")
+
+    # Eating intention
+    print("\n--- Eating Intention ---")
     eating_intention = input("Enter your eating intention for this week: ").strip()
 
-    # Show focus reflection from past review
-    print("\n--- Past Focus Area Reflection ---")
-    past_reflection = get_past_focus_reflection(today)
-    if past_reflection:
-        print(past_reflection)
-    else:
-        print("No focus area reflection available from last week.")
-
-    # Get focus areas for this week
-    print("\n--- Focus Areas for This Week ---")
-    focus_areas = []
-    while True:
-        if focus_areas:
-            another = input("\nAdd another focus area? (y/n): ").strip().lower()
-            if another != 'y':
-                break
-
-        focus = input("Enter a focus area (or press Enter to finish): ").strip()
-        if not focus:
-            break
-        focus_areas.append(focus)
-
     # Create the weekly plan content
-    focus_str = "\n".join(f"- {area}" for area in focus_areas) if focus_areas else "- "
-
-    content = f"""# Weekly Plan
-Week of: {sunday.strftime("%B %d, %Y")}
-
-## Eating Intention:
-{eating_intention}
-
-## Focus areas:
-{focus_str}
-
-"""
+    content = templates.weekly_plan_template(sunday, coming_up, approach, freetime, eating_intention)
 
     # Write the file
     writer.write_file(filepath, content)

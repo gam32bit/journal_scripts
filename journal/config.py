@@ -56,6 +56,11 @@ def monthly_path(d: date) -> Path:
     return JOURNAL_DIR / f"{d.year}" / f"{d.month:02d}" / f"monthly-{d.year}-{d.month:02d}.md"
 
 
+def monthly_plan_path(d: date) -> Path:
+    """Path for monthly plan."""
+    return JOURNAL_DIR / f"{d.year}" / f"{d.month:02d}" / f"monthly-plan-{d.year}-{d.month:02d}.md"
+
+
 def ensure_dir(filepath: Path) -> None:
     """Create parent directories if they don't exist."""
     filepath.parent.mkdir(parents=True, exist_ok=True)

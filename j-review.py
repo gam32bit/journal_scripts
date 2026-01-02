@@ -7,7 +7,6 @@ Run on Saturdays to reflect on your week.
 import sys
 from datetime import date
 from pathlib import Path
-from collections import Counter
 
 # Add parent dir to path for local development
 sys.path.insert(0, str(Path(__file__).parent))
@@ -15,99 +14,19 @@ sys.path.insert(0, str(Path(__file__).parent))
 from journal import config, parser, writer
 
 
-def calculate_sleep_average(hours: list[float]) -> float:
-    """Calculate average sleep hours."""
-    if not hours:
-        return 0.0
-    return sum(hours) / len(hours)
+def get_multi_line_input(prompt: str) -> list[str]:
+    """Get multi-line bullet point input from user."""
+    print(f"\n{prompt}")
+    print("(Enter bullet points one per line, press Enter on empty line to finish)")
 
+    items = []
+    while True:
+        line = input("- ").strip()
+        if not line:
+            break
+        items.append(line)
 
-def print_sleep_table(week_dates, day_names):
-    """Print a table of sleep hours for the week."""
-    print("\n=== Sleep Log ===")
-
-    # Collect sleep data
-    sleep_hours = []
-    for d in week_dates[1:6]:  # Monday through Friday (skip Sunday)
-        daily_path = config.daily_path(d)
-        parsed = parser.parse_file(daily_path)
-        if parsed:
-            hours_str = parsed.get_sleep_hours()
-            if hours_str:
-                try:
-                    sleep_hours.append((d.strftime("%a"), float(hours_str)))
-                except ValueError:
-                    sleep_hours.append((d.strftime("%a"), None))
-            else:
-                sleep_hours.append((d.strftime("%a"), None))
-        else:
-            sleep_hours.append((d.strftime("%a"), None))
-
-    # Calculate average
-    valid_hours = [h for _, h in sleep_hours if h is not None]
-    avg = calculate_sleep_average(valid_hours) if valid_hours else 0.0
-
-    # Print header
-    print(f"{'Sleep':<10}", end="")
-    for day, _ in sleep_hours:
-        print(f"{day:>8}", end="")
-    print(f"{'Average':>10}")
-
-    # Print values
-    print(f"{'Hours':<10}", end="")
-    for _, hours in sleep_hours:
-        if hours is not None:
-            print(f"{hours:>8.1f}", end="")
-        else:
-            print(f"{'  -':>8}", end="")
-    print(f"{avg:>10.1f}" if avg > 0 else f"{'  -':>10}")
-
-
-def print_tags_table(week_dates):
-    """Print a table of tags for the week."""
-    print("\n=== Emotional Tags ===")
-
-    # Collect tag data
-    tag_counter = Counter()
-    tag_days = {}  # tag -> set of day indices
-
-    for i, d in enumerate(week_dates[1:6]):  # Monday through Friday (skip Sunday)
-        daily_path = config.daily_path(d)
-        parsed = parser.parse_file(daily_path)
-        if parsed:
-            tags = parsed.get_tags()
-            tag_counter.update(tags)
-            for tag in tags:
-                if tag not in tag_days:
-                    tag_days[tag] = set()
-                tag_days[tag].add(i)
-
-    if not tag_counter:
-        print("No tags recorded this week.")
-        return
-
-    # Sort by frequency
-    sorted_tags = tag_counter.most_common()
-
-    # Print header
-    day_abbrev = ["Mon", "Tue", "Wed", "Thu", "Fri"]
-    print(f"{'Tag':<15}", end="")
-    for day in day_abbrev:
-        print(f"{day:>6}", end="")
-    print()
-
-    # Print separator
-    print("-" * 50)
-
-    # Print each tag
-    for tag, count in sorted_tags:
-        print(f"{tag:<15}", end="")
-        for i in range(5):
-            if i in tag_days.get(tag, set()):
-                print(f"{'✓':>6}", end="")
-            else:
-                print(f"{'':>6}", end="")
-        print()
+    return items
 
 
 def main():
@@ -124,44 +43,142 @@ def main():
 
     # Get week dates
     week_dates = config.get_week_dates(today)
-    day_names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    day_names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
     # Find weekly plan
     weekly_path = config.weekly_path(today)
+    coming_up = []
+    freetime_focuses = []
 
-    # Print sleep table
-    print_sleep_table(week_dates, day_names)
-
-    # Print tags table
-    print_tags_table(week_dates)
-
-    # Get focus areas from weekly plan
-    focus_areas = []
     if weekly_path.exists():
         parsed = parser.parse_file(weekly_path)
         if parsed:
-            focus_areas = parsed.get_list_items("focus")
+            coming_up = parsed.get_list_items("coming_up")
+            freetime_focuses = parsed.get_list_items("freetime")
 
-    # Print focus areas and ask for reflection
-    print("\n=== Focus Areas ===")
-    if focus_areas:
-        for i, area in enumerate(focus_areas, 1):
-            print(f"{i}. {area}")
+    # Display what was coming up this week
+    print("=== What came up this week ===")
+    if coming_up:
+        for item in coming_up:
+            print(f"  - {item}")
     else:
-        print("No focus areas defined for this week.")
+        print("  (No items listed in weekly plan)")
 
-    print("\n--- Reflection ---")
-    reflection = input("How did you do with your focus areas this week? ")
+    # Collect and display daily summaries
+    print("\n=== Daily Summaries ===")
+    daily_summaries = {}
+    daily_files = []
 
-    # Save the review
+    for i, d in enumerate(week_dates):
+        daily_path = config.daily_path(d)
+        if daily_path.exists():
+            daily_files.append(daily_path)
+            parsed = parser.parse_file(daily_path)
+            if parsed:
+                summaries = parsed.get_summary_bullets()
+                if summaries:
+                    daily_summaries[day_names[i]] = summaries
+                    print(f"\n{day_names[i]}:")
+                    for bullet in summaries:
+                        print(f"  - {bullet}")
+
+    if not daily_summaries:
+        print("  (No daily summaries found)")
+
+    # Calculate health metrics
+    print("\n=== Health this week ===")
+
+    # Sleep average
+    sleep_hours = []
+    mindful_eating_count = 0
+
+    for d in week_dates:
+        daily_path = config.daily_path(d)
+        if daily_path.exists():
+            parsed = parser.parse_file(daily_path)
+            if parsed:
+                # Sleep
+                hours_str = parsed.get_sleep_hours()
+                if hours_str:
+                    try:
+                        sleep_hours.append(float(hours_str))
+                    except ValueError:
+                        pass
+
+                # Mindful eating
+                mindful = parsed.get_mindful_eating()
+                if mindful and mindful.strip():
+                    mindful_eating_count += 1
+
+    sleep_avg = sum(sleep_hours) / len(sleep_hours) if sleep_hours else 0.0
+    print(f"Sleep average: {sleep_avg:.1f} hours")
+    print(f"Days with mindful eating logged: {mindful_eating_count}/7")
+
+    # Display freetime focuses
+    print("\n=== Freetime focuses ===")
+    if freetime_focuses:
+        for focus in freetime_focuses:
+            print(f"  - {focus}")
+    else:
+        print("  (No freetime focuses defined)")
+
+    # Ask about freetime focuses
+    print("\n--- Reflection on Freetime Focuses ---")
+    freetime_reflection = input("How did these go? ").strip()
+
+    # Prompt for weekly summary bullets
+    weekly_summary = get_multi_line_input("\n=== Weekly Summary ===\nWrite 3-5 bullets synthesizing the week:")
+
+    # Offer to open a specific daily entry
+    if daily_files:
+        print(f"\n--- Daily Entries ---")
+        print(f"Found {len(daily_files)} daily entries")
+        choice = input("Enter day number to open (1=Sun, 2=Mon, ..., 7=Sat), or press Enter to continue: ").strip()
+
+        if choice.isdigit():
+            day_index = int(choice) - 1
+            if 0 <= day_index < 7:
+                daily_path = config.daily_path(week_dates[day_index])
+                if daily_path.exists():
+                    print(f"Opening {day_names[day_index]}'s entry...")
+                    writer.open_in_editor(daily_path)
+
+    # Build the review content
     content = f"""# Weekly Review
 Week ending: {today.strftime("%B %d, %Y")}
 
-## Focus Reflection:
-{reflection}
-
+## What came up this week:
 """
+    if coming_up:
+        for item in coming_up:
+            content += f"- {item}\n"
+    else:
+        content += "(No items listed in weekly plan)\n"
 
+    content += "\n## Daily summaries:\n"
+    for day_name, summaries in daily_summaries.items():
+        content += f"\n### {day_name}\n"
+        for bullet in summaries:
+            content += f"- {bullet}\n"
+
+    content += f"\n## Freetime focuses:\n"
+    if freetime_focuses:
+        for focus in freetime_focuses:
+            content += f"- {focus}\n"
+    else:
+        content += "(No freetime focuses defined)\n"
+
+    content += f"\nReflection: {freetime_reflection}\n"
+
+    content += f"\n## Health this week:\n"
+    content += f"- Sleep average: {sleep_avg:.1f} hours\n"
+    content += f"- Days with mindful eating logged: {mindful_eating_count}/7\n"
+
+    content += "\n## Weekly summary:\n"
+    for bullet in weekly_summary:
+        content += f"- {bullet}\n"
+
+    # Write the file
     writer.write_file(filepath, content)
     print(f"\nWeekly review saved to: {filepath}")
 
