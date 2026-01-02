@@ -1,15 +1,42 @@
 """
-Writer for journal files.
-Handles file creation and syncing completed tasks.
+User interaction utilities.
+Prompts, menus, and editor integration.
 """
 
-import re
 import subprocess
 from pathlib import Path
-from datetime import date
-
 from . import config
-from . import parser
+
+
+def get_multi_line_input(prompt: str) -> list[str]:
+    """Get multi-line bullet point input from user."""
+    print(f"\n{prompt}")
+    print("(Enter bullet points one per line, press Enter on empty line to finish)")
+
+    items = []
+    while True:
+        line = input("- ").strip()
+        if not line:
+            break
+        items.append(line)
+
+    return items
+
+
+def get_multi_line_text(prompt: str) -> str:
+    """Get multi-line freeform text from user."""
+    print(f"\n{prompt}")
+    print("(Press Ctrl+D or Ctrl+Z when finished)")
+
+    lines = []
+    try:
+        while True:
+            line = input()
+            lines.append(line)
+    except EOFError:
+        pass
+
+    return "\n".join(lines).strip()
 
 
 def open_in_editor(filepath: Path) -> None:
@@ -43,27 +70,3 @@ def handle_existing_file(filepath: Path, file_type: str) -> str:
         return 'recreate'
     else:
         return 'quit'
-
-
-def write_file(filepath: Path, content: str) -> None:
-    """Write content to file, creating directories as needed."""
-    config.ensure_dir(filepath)
-    filepath.write_text(content, encoding="utf-8")
-    print(f"Created: {filepath}")
-
-
-def extract_weekly_file_path(daily_file: Path) -> Path | None:
-    """Extract weekly file path from daily file's reference."""
-    if not daily_file.exists():
-        return None
-    
-    content = daily_file.read_text(encoding="utf-8")
-    
-    # Look for [weekly_file:/path/to/file]
-    match = re.search(r"\[weekly_file:([^\]]+)\]", content)
-    if match:
-        path_str = match.group(1).strip()
-        if path_str:
-            return Path(path_str)
-    
-    return None
