@@ -8,14 +8,14 @@ A Python-based weekly rhythm system for planning, daily check-ins, and review at
 
 This system helps you maintain a sustainable weekly rhythm through planning, daily practice, and regular reflection:
 
-| Script | Purpose | When to use |
-|--------|---------|-------------|
+| Command | Purpose | When to use |
+|---------|---------|-------------|
 | `journal.py` | Interactive menu to access all rhythm commands | Anytime |
-| `j-month-plan.py` | Create monthly plan with themes and priorities | Start of month |
-| `j-plan.py` | Create weekly plan with upcoming events and focuses | Sunday |
-| `j-daily.py` | Daily entry with summary bullets | Daily |
-| `j-review.py` | Aggregate the week's summaries into a review | Saturday |
-| `j-monthly.py` | Aggregate monthly data from weekly reviews | End of month |
+| `journal.py month plan` | Create monthly plan with themes and priorities | Start of month |
+| `journal.py week plan` | Create weekly plan with upcoming events and focuses | Sunday |
+| `journal.py day` | Daily entry with summary bullets | Daily |
+| `journal.py week review` | Aggregate the week's summaries into a review | Saturday |
+| `journal.py month review` | Aggregate monthly data from weekly reviews | End of month |
 
 ## File Structure
 
@@ -39,8 +39,8 @@ Journal entries are stored in `~/entries/` organized by year and month:
 # Clone the repo
 git clone git@github.com:gam32bit/journal_scripts.git ~/scripts
 
-# Make entry points executable
-chmod +x ~/scripts/journal.py ~/scripts/j-*.py
+# Make entry point executable
+chmod +x ~/scripts/journal.py
 
 # Add to PATH (add to ~/.bashrc)
 export PATH="$HOME/scripts:$PATH"
@@ -61,14 +61,14 @@ Launches an interactive menu where you can:
 - Generate a weekly review
 - Generate a monthly review
 
-### Individual Scripts
+### Direct Commands
 
-You can also run scripts directly:
+You can also run commands directly:
 
 #### Monthly Planning (Start of Month)
 
 ```bash
-j-month-plan.py
+journal.py month plan
 ```
 
 Opens a vim template with sections for:
@@ -86,7 +86,7 @@ If a monthly plan already exists, you'll be prompted to:
 #### Weekly Planning (Sundays)
 
 ```bash
-j-plan.py
+journal.py week plan
 ```
 
 Prompts you for:
@@ -103,7 +103,7 @@ If a weekly plan already exists, you'll be prompted to:
 #### Daily Entry
 
 ```bash
-j-daily.py
+journal.py day
 ```
 
 Creates a daily entry that:
@@ -123,7 +123,7 @@ If a journal entry already exists, you'll be prompted to:
 #### Weekly Review (Saturdays)
 
 ```bash
-j-review.py
+journal.py week review
 ```
 
 Aggregates the week's data:
@@ -143,7 +143,7 @@ If a weekly review already exists, you'll be prompted to:
 #### Monthly Review (End of Month)
 
 ```bash
-j-monthly.py
+journal.py month review
 ```
 
 Aggregates data from the entire month:
@@ -167,6 +167,33 @@ If a monthly review already exists, you'll be prompted to:
 Edit `journal/config.py` to change:
 - `JOURNAL_DIR` - where journal files are stored (default: `~/entries`)
 - `EDITOR` - which editor to use (default: `$EDITOR` or `vim`)
+
+## Code Structure
+
+The codebase is organized as a single entry point with modular components:
+
+```
+journal_scripts/
+├── journal.py              # Single entry point with subcommands
+├── README.md
+├── .gitignore
+└── journal/
+    ├── __init__.py
+    ├── config.py           # Paths and constants
+    ├── models.py           # ParsedFile dataclass
+    ├── parser.py           # Parsing logic
+    ├── templates.py        # Templates for journal files
+    ├── io.py               # File I/O operations
+    ├── ui.py               # User interaction (prompts, editor, menus)
+    └── commands/
+        ├── __init__.py
+        ├── base.py         # Shared command infrastructure
+        ├── day.py          # Daily entry command
+        ├── week_plan.py    # Weekly planning command
+        ├── week_review.py  # Weekly review command
+        ├── month_plan.py   # Monthly planning command
+        └── month_review.py # Monthly review command
+```
 
 ## Migration Notes
 

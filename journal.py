@@ -1,59 +1,80 @@
 #!/usr/bin/env python3
 """
-Journal - Main menu for journal system.
-Run this to access plan, daily entry, or review.
+Journal - Weekly rhythm system.
+
+Usage:
+    journal.py              # Interactive menu
+    journal.py day          # Create daily entry
+    journal.py week plan    # Create weekly plan
+    journal.py week review  # Create weekly review
+    journal.py month plan   # Create monthly plan
+    journal.py month review # Create monthly review
 """
 
 import sys
-import subprocess
 from pathlib import Path
 
 # Add parent dir to path for local development
 sys.path.insert(0, str(Path(__file__).parent))
 
-
-def show_menu():
-    """Display the main menu."""
-    print("\n=== Weekly Rhythm ===")
-    print("1. Weekly Plan")
-    print("2. Daily Entry")
-    print("3. Weekly Review")
-    print("4. Monthly Plan")
-    print("5. Monthly Review")
-    print("0. Exit")
-    print()
+from journal import commands
 
 
 def main():
-    script_dir = Path(__file__).parent
+    args = sys.argv[1:]
+
+    if not args:
+        # Interactive menu mode
+        run_interactive_menu()
+        return
+
+    # Subcommand mode
+    cmd = " ".join(args).lower()
+
+    command_map = {
+        "day": commands.day,
+        "daily": commands.day,  # alias
+        "week plan": commands.week_plan,
+        "week review": commands.week_review,
+        "month plan": commands.month_plan,
+        "month review": commands.month_review,
+    }
+
+    if cmd in command_map:
+        command_map[cmd]()
+    else:
+        print(f"Unknown command: {cmd}")
+        print(__doc__)
+        sys.exit(1)
+
+
+def run_interactive_menu():
+    """Run the interactive menu loop."""
+    menu_options = {
+        "1": ("Weekly Plan", commands.week_plan),
+        "2": ("Daily Entry", commands.day),
+        "3": ("Weekly Review", commands.week_review),
+        "4": ("Monthly Plan", commands.month_plan),
+        "5": ("Monthly Review", commands.month_review),
+    }
 
     while True:
-        show_menu()
+        print("\n=== Weekly Rhythm ===")
+        for key, (label, _) in menu_options.items():
+            print(f"{key}. {label}")
+        print("0. Exit")
+        print()
+
         choice = input("Select an option (0-5): ").strip()
 
-        if choice == "1":
-            print("\n--- Weekly Plan ---")
-            subprocess.run([sys.executable, str(script_dir / "j-plan.py")])
-            print()
-        elif choice == "2":
-            print("\n--- Daily Entry ---")
-            subprocess.run([sys.executable, str(script_dir / "j-daily.py")])
-            print()
-        elif choice == "3":
-            print("\n--- Weekly Review ---")
-            subprocess.run([sys.executable, str(script_dir / "j-review.py")])
-            print()
-        elif choice == "4":
-            print("\n--- Monthly Plan ---")
-            subprocess.run([sys.executable, str(script_dir / "j-month-plan.py")])
-            print()
-        elif choice == "5":
-            print("\n--- Monthly Review ---")
-            subprocess.run([sys.executable, str(script_dir / "j-monthly.py")])
-            print()
-        elif choice == "0":
+        if choice == "0":
             print("Goodbye!")
             break
+        elif choice in menu_options:
+            label, command_fn = menu_options[choice]
+            print(f"\n--- {label} ---")
+            command_fn()
+            print()
         else:
             print("Invalid choice. Please select 0-5.")
 
