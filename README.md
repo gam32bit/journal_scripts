@@ -71,12 +71,12 @@ You can also run scripts directly:
 j-month-plan.py
 ```
 
-Prompts you for:
+Opens a vim template with sections for:
 - What's coming up this month (big events, deadlines, trips)
-- Themes or intentions for the month (optional)
+- Themes or intentions for the month
 - Freetime focuses to prioritize
 
-Shows last month's summary if available.
+Shows last month's summary before opening vim for context.
 
 If a monthly plan already exists, you'll be prompted to:
 - **(e)dit** - Open the existing file in your editor

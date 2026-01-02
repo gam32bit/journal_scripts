@@ -14,40 +14,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 from journal import config, parser, templates, writer
 
 
-def get_multi_line_input(prompt: str) -> list[str]:
-    """Get multi-line bullet point input from user."""
-    print(f"\n{prompt}")
-    print("(Enter bullet points one per line, press Enter on empty line to finish)")
-
-    items = []
-    while True:
-        line = input("- ").strip()
-        if not line:
-            break
-        items.append(line)
-
-    return items
-
-
-def get_multi_line_text(prompt: str) -> str:
-    """Get multi-line freeform text from user."""
-    print(f"\n{prompt}")
-    print("(Press Ctrl+D or Ctrl+Z when finished, or press Enter on empty line to skip)")
-
-    lines = []
-    try:
-        while True:
-            line = input()
-            if not line and not lines:
-                # Empty line at the start - skip
-                break
-            lines.append(line)
-    except EOFError:
-        pass
-
-    return "\n".join(lines).strip()
-
-
 def get_last_month_summary(today: date) -> list[str]:
     """Get the monthly summary from last month's review."""
     # Get previous month
@@ -86,20 +52,18 @@ def main():
     else:
         print("  (No summary from last month)")
 
-    # What's coming up this month?
-    coming_up = get_multi_line_input("\nWhat's coming up this month? (big events, deadlines, trips)")
+    print("\nOpening monthly plan template in vim...")
+    print("Fill in the sections and save when done.\n")
 
-    # Themes or intentions (optional)
-    themes = get_multi_line_text("\nThemes or intentions for this month (optional)?")
+    # Create the monthly plan template with empty sections
+    content = templates.monthly_plan_template(today, [], "", [])
 
-    # Freetime focuses to prioritize
-    freetime = get_multi_line_input("\nWhat freetime focuses do you want to prioritize this month?")
-
-    # Create the monthly plan content
-    content = templates.monthly_plan_template(today, coming_up, themes, freetime)
-
-    # Write the file
+    # Write the template file
     writer.write_file(filepath, content)
+
+    # Open in vim for editing
+    writer.open_in_editor(filepath)
+
     print(f"\nMonthly plan saved to: {filepath}")
 
 
