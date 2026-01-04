@@ -14,26 +14,19 @@ def run(target_date: date = None):
     filepath = config.weekly_path(target_date)
 
     def create_weekly_plan():
-        print("=== Weekly Plan Setup ===\n")
+        print("=== Weekly Plan Setup ===")
+        print("Opening weekly plan template in vim...")
+        print("Fill in the sections and save when done.\n")
 
-        # What's coming up this week?
-        coming_up = ui.get_multi_line_input("What's coming up this week?")
+        # Create the weekly plan template with empty sections
+        content = templates.weekly_plan_template(sunday)
 
-        # How do you want to approach this week?
-        approach = ui.get_multi_line_text("\nHow do you want to approach this week?")
-
-        # Freetime focuses
-        freetime = ui.get_multi_line_input("\nWhat are your freetime focuses for this week?")
-
-        # Eating intention
-        print("\n--- Eating Intention ---")
-        eating_intention = input("Enter your eating intention for this week: ").strip()
-
-        # Create the weekly plan content
-        content = templates.weekly_plan_template(sunday, coming_up, approach, freetime, eating_intention)
-
-        # Write the file
+        # Write the template file
         io.write_file(filepath, content)
+
+        # Open in vim for editing
+        ui.open_in_editor(filepath)
+
         print(f"\nWeekly plan saved to: {filepath}")
 
     run_with_existing_check(filepath, "Weekly plan", create_weekly_plan)
