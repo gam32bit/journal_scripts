@@ -6,25 +6,22 @@ Generates content for new entries.
 from datetime import date
 
 
-def weekly_plan_template(d: date, coming_up: list[str], approach: str, freetime: list[str], eating_intention: str) -> str:
+def weekly_plan_template(d: date) -> str:
     """Generate weekly plan template."""
-    coming_up_str = "\n".join(f"- {item}" for item in coming_up) if coming_up else "- "
-    freetime_str = "\n".join(f"- {item}" for item in freetime) if freetime else "- "
-
     return f"""# Weekly Plan
 Week of: {d.strftime("%B %d, %Y")}
 
 ## What's coming up:
-{coming_up_str}
+-
 
 ## How I want to approach this week:
-{approach if approach else ""}
+
 
 ## Freetime focuses:
-{freetime_str}
+-
 
 ## Eating intention:
-{eating_intention if eating_intention else ""}
+
 """
 
 
