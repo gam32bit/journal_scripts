@@ -19,9 +19,8 @@ def run(target_date: date = None):
         # Get sleep hours
         sleep_hours = input("How many hours did you sleep last night? ").strip()
 
-        # Get mindful eating moment (optional)
-        print("\n--- Mindful Eating ---")
-        mindful_eating = input("Describe one moment you ate mindfully yesterday (or press Enter to skip): ").strip()
+        # Get thoughts on eating
+        mindful_eating = input("Thoughts on eating yesterday? ").strip()
 
         # Find weekly plan for freetime focuses
         weekly_path = config.weekly_path(target_date)
@@ -49,38 +48,6 @@ def run(target_date: date = None):
         # Open in editor for user to write entry
         print("\nOpening editor for journal entry...")
         ui.open_in_editor(filepath)
-
-        # After editor closes, prompt for summary bullets
-        print("\n--- Summary Bullets ---")
-        print("Add 2-3 summary bullets that capture the texture of today")
-        print("(e.g., 'Fun family visit', 'Weird unexplained lethargy')")
-        print("(Enter bullet points one per line, press Enter on empty line to finish)")
-
-        summary_bullets = []
-        while True:
-            bullet = input("- ").strip()
-            if not bullet:
-                break
-            summary_bullets.append(bullet)
-
-        # Read the current file content
-        file_content = io.read_file(filepath)
-        if file_content:
-            # Update the summary section
-            if summary_bullets:
-                bullets_str = "\n".join(f"- {bullet}" for bullet in summary_bullets)
-                # Replace the empty summary section with the actual bullets
-                file_content = re.sub(
-                    r'## Summary:\n-\n-',
-                    f'## Summary:\n{bullets_str}',
-                    file_content
-                )
-
-                filepath.write_text(file_content, encoding="utf-8")
-                print(f"\nJournal entry saved with {len(summary_bullets)} summary bullets!")
-            else:
-                print("\nJournal entry saved (no summary bullets added).")
-        else:
-            print("\nWarning: Journal file not found.")
+        print("\nJournal entry saved!")
 
     run_with_existing_check(filepath, "Today's journal", create_daily_entry)
