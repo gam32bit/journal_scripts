@@ -1,4 +1,4 @@
-# Weekly Rhythm System
+# CLI Journaling System
 
 > ⚠️ **Work in Progress** - This system is actively being developed and may change.
 
