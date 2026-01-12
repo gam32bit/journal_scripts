@@ -8,8 +8,7 @@ from datetime import date
 
 def weekly_plan_template(d: date) -> str:
     """Generate weekly plan template."""
-    return f"""# Weekly Plan
-Week of: {d.strftime("%B %d, %Y")}
+    return f"""# Weekly Plan - {d.strftime("%B %d, %Y")}
 
 ## What's coming up:
 -
@@ -19,8 +18,6 @@ Week of: {d.strftime("%B %d, %Y")}
 
 ## Freetime focuses:
 -
-
-## Eating intention:
 
 """
 
@@ -43,8 +40,7 @@ sleep_hours: {sleep_hours}
 mindful_eating:
 ---
 
-# Daily Entry
-Date: {d.strftime("%A, %B %d, %Y")}
+# Daily Entry - {d.strftime("%A, %B %d, %Y")}
 
 ## Freetime focuses:
 {freetime_str}
