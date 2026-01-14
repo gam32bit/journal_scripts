@@ -75,6 +75,7 @@ def run_interactive_menu():
             print(f"\n--- {label} ---")
             command_fn()
             print()
+            break  # Exit after completing the command
         else:
             print("Invalid choice. Please select 0-5.")
 
