@@ -14,6 +14,8 @@ SECTION_ALIASES = {
     "what's coming up": "coming_up",
     "how i want to approach this week": "approach",
     "freetime focuses": "freetime",
+    "freetime focuses (from monthly plan)": "freetime_monthly",
+    "freetime focuses this week": "freetime",
     "eating intention": "eating_intention",
 
     # Legacy support
