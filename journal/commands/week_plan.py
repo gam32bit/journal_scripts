@@ -47,6 +47,9 @@ def run(target_date: date = None):
             content += "- (No freetime focuses in monthly plan)\n"
 
         content += """
+## Freetime focuses this week:
+-
+
 ## What's coming up:
 -
 
