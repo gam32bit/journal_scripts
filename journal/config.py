@@ -9,7 +9,7 @@ from datetime import date, timedelta
 
 
 # Base directory for all journal files
-JOURNAL_DIR = Path.home() / ".entries_encrypted/entries/"
+JOURNAL_DIR = Path.home() / ".entries_encrypted/"
 
 # Editor: respect $EDITOR, fall back to vim
 EDITOR = os.environ.get("EDITOR", "vim")
