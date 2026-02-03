@@ -2,7 +2,7 @@
 
 import calendar
 from datetime import date, timedelta
-from journal import config, parser, ui, io
+from journal import config, parser, templates, ui, io
 from .base import run_with_existing_check
 
 
@@ -173,53 +173,6 @@ def run(target_date: date = None):
         print(f"Weekly plans: {consistency['weekly_plans']}")
         print(f"Weekly reviews: {consistency['weekly_reviews']}")
 
-        # What happened this month (from weekly plans)
-        print("\n=== What happened this month ===")
-        weekly_plans = find_weekly_plans_for_month(target_date)
-
-        weekly_coming_up = []
-        if weekly_plans:
-            for sunday, plan in weekly_plans:
-                parsed = parser.parse_file(plan)
-                if parsed:
-                    coming_up = parsed.get_list_items("coming_up")
-                    if coming_up:
-                        weekly_coming_up.append((sunday, coming_up))
-                        print(f"\nWeek of {sunday.strftime('%B %d')}:")
-                        for item in coming_up:
-                            print(f"  - {item}")
-        else:
-            print("  (No weekly plans found)")
-
-        # All daily summaries organized by week
-        print("\n=== All daily summaries ===")
-        weekly_daily_summaries = {}
-
-        for sunday, _ in weekly_plans:
-            week_dates = config.get_week_dates(sunday)
-            day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
-            week_summaries = []
-            for i, d in enumerate(week_dates):
-                daily_path = config.daily_path(d)
-                if daily_path.exists():
-                    parsed = parser.parse_file(daily_path)
-                    if parsed:
-                        summaries = parsed.get_summary_bullets()
-                        if summaries:
-                            week_summaries.append((day_names[i], summaries))
-
-            if week_summaries:
-                weekly_daily_summaries[sunday] = week_summaries
-
-        for sunday, summaries in weekly_daily_summaries.items():
-            print(f"\nWeek of {sunday.strftime('%B %d')}:")
-            for day_name, bullets in summaries:
-                print(f"  {day_name}: {', '.join(bullets)}")
-
-        if not weekly_daily_summaries:
-            print("  (No daily summaries found)")
-
         # Freetime focuses
         print("\n=== Freetime focuses this month ===")
         freetime_focuses = collect_freetime_focuses(target_date)
@@ -277,56 +230,21 @@ def run(target_date: date = None):
         # Prompt for monthly summary
         monthly_summary = ui.get_multi_line_input("\n=== Monthly Summary ===\nWrite bullets synthesizing the month:")
 
-        # Build the monthly review content
-        content = f"""# Monthly Review
-Month: {month_name}
+        # Prompt for monthly reflection
+        print("\n=== Monthly Reflection ===")
+        monthly_reflection = input("How did this month go? ").strip()
 
-## Consistency:
-- Daily entries: {consistency['daily_entries']}
-- Weekly plans: {consistency['weekly_plans']}
-- Weekly reviews: {consistency['weekly_reviews']}
-
-## What happened this month:
-"""
-
-        for sunday, coming_up in weekly_coming_up:
-            content += f"\n### Week of {sunday.strftime('%B %d')}\n"
-            for item in coming_up:
-                content += f"- {item}\n"
-
-        content += "\n## All daily summaries:\n"
-
-        for sunday, summaries in weekly_daily_summaries.items():
-            content += f"\n### Week of {sunday.strftime('%B %d')}\n"
-            for day_name, bullets in summaries:
-                content += f"- {day_name}: {', '.join(bullets)}\n"
-
-        content += "\n## Freetime focuses this month:\n"
-        if freetime_focuses:
-            for focus in freetime_focuses:
-                content += f"- {focus}\n"
-        else:
-            content += "(No freetime focuses found)\n"
-
-        content += f"\n## Health:\n"
-        content += f"- Sleep average: {sleep_data['average']:.1f} hours"
-        if sleep_data['trend'] != 0.0:
-            trend_sign = "+" if sleep_data['trend'] > 0 else ""
-            content += f" (trend: {trend_sign}{sleep_data['trend']:.1f} vs last month)\n"
-        else:
-            content += " (no trend data)\n"
-        content += f"- Days with mindful eating logged: {mindful_eating_days}\n"
-
-        content += "\n## Weekly summaries:\n"
-
-        for sunday, summary in weekly_review_summaries:
-            content += f"\n### Week ending {(sunday + timedelta(days=6)).strftime('%B %d')}\n"
-            for bullet in summary:
-                content += f"- {bullet}\n"
-
-        content += "\n## Monthly summary:\n"
-        for bullet in monthly_summary:
-            content += f"- {bullet}\n"
+        # Build the monthly review content using template
+        content = templates.monthly_review_template(
+            d=target_date,
+            consistency=consistency,
+            freetime_focuses=freetime_focuses,
+            sleep_data=sleep_data,
+            mindful_eating_days=mindful_eating_days,
+            weekly_summaries=weekly_review_summaries,
+            monthly_summary=monthly_summary,
+            monthly_reflection=monthly_reflection,
+        )
 
         # Write the file
         io.write_file(filepath, content)

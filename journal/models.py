@@ -3,7 +3,6 @@ Data models for journal system.
 ParsedFile dataclass and related types.
 """
 
-import re
 from pathlib import Path
 from dataclasses import dataclass, field
 
@@ -40,36 +39,6 @@ class ParsedFile:
         """Get a value from the YAML front matter."""
         return self.front_matter.get(key)
 
-    def get_checked_items(self, name: str) -> tuple[list[str], list[str]]:
-        """
-        Get checked and unchecked items from a section.
-        Returns (checked, unchecked) tuple.
-        Supports: [x] or [X] for checked, [ ] or - for unchecked
-        """
-        checked = []
-        unchecked = []
-
-        for line in self.get_section(name):
-            stripped = line.strip()
-
-            # [x] or [X] = checked
-            if re.match(r"^-?\s*\[[xX]\]\s*", stripped):
-                item = re.sub(r"^-?\s*\[[xX]\]\s*", "", stripped).strip()
-                if item:
-                    checked.append(item)
-            # [ ] = unchecked
-            elif re.match(r"^-?\s*\[\s*\]\s*", stripped):
-                item = re.sub(r"^-?\s*\[\s*\]\s*", "", stripped).strip()
-                if item:
-                    unchecked.append(item)
-            # Plain - item = unchecked
-            elif stripped.startswith("- "):
-                item = stripped[2:].strip()
-                if item:
-                    unchecked.append(item)
-
-        return checked, unchecked
-
     def get_summary_bullets(self) -> list[str]:
         """Get summary bullets from front matter or section."""
         # Try front matter first
@@ -89,33 +58,6 @@ class ParsedFile:
         """Extract sleep hours from front matter."""
         return self.get_front_matter("sleep_hours")
 
-    def get_eating_reflection(self) -> str | None:
-        """Extract eating reflection from front matter (legacy)."""
-        return self.get_front_matter("eating_reflection")
-
     def get_mindful_eating(self) -> str | None:
         """Extract mindful eating moment from front matter."""
         return self.get_front_matter("mindful_eating")
-
-    def get_sleep_score(self) -> str | None:
-        """Extract sleep score (X, -, or O)."""
-        text = self.get_section_text("sleep")
-        if not text:
-            return None
-
-        # Look for X, -, or O
-        text_upper = text.upper()
-        for char in ["O", "-", "X"]:
-            if char in text_upper:
-                return char
-
-        # Also accept Good/Decent/Bad
-        text_lower = text.lower()
-        if "good" in text_lower:
-            return "O"
-        if "decent" in text_lower:
-            return "-"
-        if "bad" in text_lower:
-            return "X"
-
-        return None

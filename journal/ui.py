@@ -23,29 +23,27 @@ def get_multi_line_input(prompt: str) -> list[str]:
     return items
 
 
-def get_multi_line_text(prompt: str) -> str:
-    """Get multi-line freeform text from user."""
-    print(f"\n{prompt}")
-    print("(Press Ctrl+D or Ctrl+Z when finished)")
+def open_in_editor(filepath: Path, daily_entry: bool = False) -> None:
+    """Open file in user's editor.
 
-    lines = []
-    try:
-        while True:
-            line = input()
-            lines.append(line)
-    except EOFError:
-        pass
-
-    return "\n".join(lines).strip()
-
-
-def open_in_editor(filepath: Path) -> None:
-    """Open file in user's editor."""
+    Args:
+        filepath: Path to the file to edit
+        daily_entry: If True, position cursor after "Journal entry:" header
+    """
     editor = config.EDITOR
 
-    # For vim/nvim, open in insert mode at the end of the file
     if editor in ('vim', 'nvim', 'vi'):
-        subprocess.run([editor, "+$", str(filepath)])
+        if daily_entry:
+            # Position cursor on line after "Journal entry:" and start in insert mode
+            subprocess.run([
+                editor,
+                "+/Journal entry:/+1",
+                "-c", "startinsert",
+                str(filepath)
+            ])
+        else:
+            # Default: open at end of file
+            subprocess.run([editor, "+$", str(filepath)])
     else:
         subprocess.run([editor, str(filepath)])
 
