@@ -1,7 +1,7 @@
 """Weekly review command."""
 
 from datetime import date
-from journal import config, parser, ui, io
+from journal import config, parser, templates, ui, io
 from .base import run_with_existing_check
 
 
@@ -22,11 +22,13 @@ def run(target_date: date = None):
         # Find weekly plan
         weekly_path = config.weekly_path(target_date)
         freetime_focuses = []
+        approach_text = ""
 
         if weekly_path.exists():
             parsed = parser.parse_file(weekly_path)
             if parsed:
                 freetime_focuses = parsed.get_list_items("freetime")
+                approach_text = parsed.get_section_text("approach")
 
         # Collect sleep hours and mindful eating logs
         sleep_data = []  # List of (day_name, hours) tuples
@@ -84,9 +86,12 @@ def run(target_date: date = None):
         else:
             print("  (No freetime focuses defined)")
 
-        # Ask about freetime focuses
-        print()
-        freetime_reflection = input("How did these go? ").strip()
+        # Display approach for this week
+        print("\n=== Approach for this week ===")
+        if approach_text:
+            print(approach_text)
+        else:
+            print("  (No approach defined)")
 
         # Collect daily summaries
         print("\n=== Daily Summaries ===")
@@ -107,55 +112,23 @@ def run(target_date: date = None):
         if not daily_summaries:
             print("  (No daily summaries found)")
 
+        # Prompt for weekly reflection
+        print("\n=== Weekly Reflection ===")
+        weekly_reflection = input("How did this week go? ").strip()
+
         # Prompt for weekly summary bullets
         weekly_summary = ui.get_multi_line_input("\n=== Weekly Summary ===\nWrite 3-5 bullets synthesizing the week:")
 
-        # Build the review content
-        content = f"""# Weekly Review - {target_date.strftime("%B %d, %Y")}
-
-## Sleep this week:
-"""
-        if sleep_data:
-            sleep_avg = sum(h for _, h in sleep_data) / len(sleep_data)
-            content += f"Average: {sleep_avg:.1f} hours\n\n"
-            for day_name, hours in sleep_data:
-                full_blocks = int(hours)
-                partial = hours - full_blocks
-                bar = "█" * full_blocks
-                if partial >= 0.5:
-                    bar += "▌"
-                content += f"{day_name}: {bar} {hours:.1f}h\n"
-        else:
-            content += "(No sleep data found)\n"
-
-        content += "\n## Mindful eating logs:\n"
-        if mindful_eating_logs:
-            for day_name, log in mindful_eating_logs:
-                content += f"{day_name}: {log}\n"
-        else:
-            content += "(No mindful eating logs found)\n"
-
-        content += "\n## Freetime focuses:\n"
-        if freetime_focuses:
-            for focus in freetime_focuses:
-                content += f"- {focus}\n"
-        else:
-            content += "(No freetime focuses defined)\n"
-
-        content += f"\nReflection: {freetime_reflection}\n"
-
-        content += "\n## Daily summaries:\n"
-        if daily_summaries:
-            for day_name, summaries in daily_summaries.items():
-                content += f"\n### {day_name}\n"
-                for bullet in summaries:
-                    content += f"- {bullet}\n"
-        else:
-            content += "(No daily summaries found)\n"
-
-        content += "\n## Weekly summary:\n"
-        for bullet in weekly_summary:
-            content += f"- {bullet}\n"
+        # Build the review content using template
+        content = templates.weekly_review_template(
+            d=target_date,
+            sleep_data=sleep_data,
+            mindful_eating_logs=mindful_eating_logs,
+            freetime_focuses=freetime_focuses,
+            daily_summaries=daily_summaries,
+            weekly_reflection=weekly_reflection,
+            weekly_summary=weekly_summary,
+        )
 
         # Write the file
         io.write_file(filepath, content)

@@ -16,38 +16,27 @@ SECTION_ALIASES = {
     "freetime focuses": "freetime",
     "freetime focuses (from monthly plan)": "freetime_monthly",
     "freetime focuses this week": "freetime",
-    "eating intention": "eating_intention",
 
-    # Legacy support
-    "focus areas": "freetime",  # Map old "focus areas" to "freetime"
-    "focus areas (mood/habits)": "freetime",
-    "focus": "freetime",
+    # Legacy freetime support (for older files)
+    "focus areas": "freetime",
 
     # Daily journal sections
-    "sleep quality": "sleep",
-    "sleep": "sleep",
-    "sleep hours": "sleep_hours",
-    "mindful eating": "mindful_eating",
-    "yesterday's eating reflection": "eating",
-    "eating reflection": "eating",
-    "eating": "eating",
     "journal entry": "journal",
     "journal": "journal",
     "summary": "summary",
 
-    # Review sections
-    "weekly reflection": "reflection",
+    # Weekly review sections
+    "weekly reflection": "weekly_reflection",
     "weekly summary": "weekly_summary",
     "daily summaries": "daily_summaries",
 
     # Monthly plan sections
     "what's coming up this month": "coming_up_month",
     "themes or intentions": "themes",
+    "freetime focuses to prioritize": "freetime",
 
     # Monthly review sections
     "consistency": "consistency",
-    "focus areas this month": "focus_areas_month",
-    "eating intentions this month": "eating_intentions_month",
     "monthly reflection": "monthly_reflection",
     "monthly summary": "monthly_summary",
 }
@@ -200,17 +189,6 @@ def parse_file(filepath: Path) -> ParsedFile | None:
         result.sections[current_section] = current_content
     
     return result
-
-
-def find_weekly_file(d) -> Path | None:
-    """
-    Find the weekly plan file for the week containing date d.
-    Returns path if exists, None otherwise.
-    """
-    from . import config
-    
-    path = config.weekly_path(d)
-    return path if path.exists() else None
 
 
 def find_daily_files(d) -> list[Path]:
