@@ -61,6 +61,18 @@ Launches an interactive menu where you can:
 - Generate a weekly review
 - Generate a monthly review
 
+### The `--date` Flag
+
+By default, all commands target today's date. Use `--date YYYY-MM-DD` to target a specific date instead — useful for catching up on missed entries or running reviews retroactively:
+
+```bash
+journal.py week review --date 2025-02-07   # Run last week's review using Saturday's date
+journal.py day --date 2025-02-06            # Backfill a daily entry for Thursday
+journal.py --date 2025-01-31 month review   # Run January's monthly review
+```
+
+The flag can appear anywhere in the argument list (before or after the command name) and also works with the interactive menu.
+
 ### Direct Commands
 
 You can also run commands directly:
