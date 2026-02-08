@@ -9,9 +9,13 @@ Usage:
     journal.py week review  # Create weekly review
     journal.py month plan   # Create monthly plan
     journal.py month review # Create monthly review
+
+Options:
+    --date YYYY-MM-DD       Target a specific date instead of today
 """
 
 import sys
+from datetime import datetime
 from pathlib import Path
 
 # Add parent dir to path for local development
@@ -20,12 +24,42 @@ sys.path.insert(0, str(Path(__file__).parent))
 from journal import commands
 
 
+def parse_date_flag(args):
+    """Extract --date YYYY-MM-DD from args, returning (remaining_args, target_date).
+
+    Returns the args list with --date and its value removed, and the parsed date
+    (or None if --date was not provided).
+    """
+    if "--date" not in args:
+        return args, None
+
+    idx = args.index("--date")
+
+    if idx + 1 >= len(args):
+        print("Error: --date requires a value in YYYY-MM-DD format.")
+        sys.exit(1)
+
+    date_str = args[idx + 1]
+
+    try:
+        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        print(f"Error: Invalid date '{date_str}'. Expected format: YYYY-MM-DD.")
+        sys.exit(1)
+
+    remaining = args[:idx] + args[idx + 2:]
+    return remaining, target_date
+
+
 def main():
     args = sys.argv[1:]
 
+    # Extract --date flag before processing commands
+    args, target_date = parse_date_flag(args)
+
     if not args:
         # Interactive menu mode
-        run_interactive_menu()
+        run_interactive_menu(target_date=target_date)
         return
 
     # Subcommand mode
@@ -41,14 +75,17 @@ def main():
     }
 
     if cmd in command_map:
-        command_map[cmd]()
+        kwargs = {}
+        if target_date is not None:
+            kwargs["target_date"] = target_date
+        command_map[cmd](**kwargs)
     else:
         print(f"Unknown command: {cmd}")
         print(__doc__)
         sys.exit(1)
 
 
-def run_interactive_menu():
+def run_interactive_menu(target_date=None):
     """Run the interactive menu loop."""
     menu_options = {
         "1": ("Weekly Plan", commands.week_plan),
@@ -59,7 +96,10 @@ def run_interactive_menu():
     }
 
     while True:
-        print("\n=== Weekly Rhythm ===")
+        header = "=== Weekly Rhythm ==="
+        if target_date is not None:
+            header = f"=== Weekly Rhythm (date: {target_date}) ==="
+        print(f"\n{header}")
         for key, (label, _) in menu_options.items():
             print(f"{key}. {label}")
         print("0. Exit")
@@ -73,7 +113,10 @@ def run_interactive_menu():
         elif choice in menu_options:
             label, command_fn = menu_options[choice]
             print(f"\n--- {label} ---")
-            command_fn()
+            kwargs = {}
+            if target_date is not None:
+                kwargs["target_date"] = target_date
+            command_fn(**kwargs)
             print()
             break  # Exit after completing the command
         else:
