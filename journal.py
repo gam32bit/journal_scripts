@@ -87,40 +87,70 @@ def main():
 
 def run_interactive_menu(target_date=None):
     """Run the interactive menu loop."""
-    menu_options = {
-        "1": ("Weekly Plan", commands.week_plan),
-        "2": ("Daily Entry", commands.day),
-        "3": ("Weekly Review", commands.week_review),
-        "4": ("Monthly Plan", commands.month_plan),
-        "5": ("Monthly Review", commands.month_review),
-    }
+    kwargs = {}
+    if target_date is not None:
+        kwargs["target_date"] = target_date
 
     while True:
         header = "=== Weekly Rhythm ==="
         if target_date is not None:
             header = f"=== Weekly Rhythm (date: {target_date}) ==="
         print(f"\n{header}")
-        for key, (label, _) in menu_options.items():
-            print(f"{key}. {label}")
+        print("1. Daily Entry")
+        print("2. Weekly")
+        print("3. Monthly")
         print("0. Exit")
         print()
 
-        choice = input("Select an option (0-5): ").strip()
+        choice = input("Select an option (0-3): ").strip()
 
         if choice == "0":
             print("Goodbye!")
             break
-        elif choice in menu_options:
-            label, command_fn = menu_options[choice]
-            print(f"\n--- {label} ---")
-            kwargs = {}
-            if target_date is not None:
-                kwargs["target_date"] = target_date
-            command_fn(**kwargs)
+        elif choice == "1":
+            commands.day(**kwargs)
             print()
-            break  # Exit after completing the command
+            break
+        elif choice == "2":
+            print("\n--- Weekly ---")
+            print("1. Plan")
+            print("2. Review")
+            print("0. Back")
+            print()
+            sub = input("Select an option (0-2): ").strip()
+            if sub == "0":
+                continue
+            elif sub == "1":
+                commands.week_plan(**kwargs)
+                print()
+                break
+            elif sub == "2":
+                commands.week_review(**kwargs)
+                print()
+                break
+            else:
+                print("Invalid choice. Please select 0-2.")
+        elif choice == "3":
+            print("\n--- Monthly ---")
+            print("1. Plan")
+            print("2. Review")
+            print("0. Back")
+            print()
+            sub = input("Select an option (0-2): ").strip()
+            if sub == "0":
+                continue
+            elif sub == "1":
+                commands.month_plan(**kwargs)
+                print()
+                break
+            elif sub == "2":
+                commands.month_review(**kwargs)
+                print()
+                break
+            else:
+                print("Invalid choice. Please select 0-2.")
         else:
-            print("Invalid choice. Please select 0-5.")
+            print("Invalid choice. Please select 0-3.")
 
 
 if __name__ == "__main__":

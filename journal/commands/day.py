@@ -47,7 +47,7 @@ def run(target_date: date = None):
 
         # Open in editor for user to write entry (position cursor at journal entry)
         print("\nOpening editor for journal entry...")
-        ui.open_in_editor(filepath, daily_entry=True)
+        ui.open_in_editor(filepath, daily_entry=True, timer_minutes=15)
 
         # Read the file content to show the user what they wrote
         saved_content = io.read_file(filepath)
