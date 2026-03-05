@@ -14,56 +14,60 @@ def run(target_date: date = None):
     filepath = config.weekly_path(target_date)
 
     def create_weekly_plan():
-        print("=== Weekly Plan Setup ===")
+        print(f"=== Weekly Plan: {sunday.strftime('%B %d, %Y')} ===\n")
 
         # Get freetime focuses from monthly plan
         monthly_path = config.monthly_plan_path(target_date)
-        freetime_focuses = []
+        monthly_freetime = []
 
         if monthly_path.exists():
             parsed = parser.parse_file(monthly_path)
             if parsed:
-                freetime_focuses = parsed.get_list_items("freetime")
+                monthly_freetime = parsed.get_list_items("freetime")
 
-        # Display freetime focuses from monthly plan
-        if freetime_focuses:
+        # Display freetime focuses from monthly plan for reference
+        if monthly_freetime:
             print("Freetime focuses from monthly plan:")
-            for focus in freetime_focuses:
+            for focus in monthly_freetime:
                 print(f"  - {focus}")
             print()
 
-        print("Opening weekly plan template in vim...")
-        print("Fill in the sections and save when done.\n")
+        freetime_focuses = ui.get_multi_line_input("Freetime focuses this week:")
 
-        # Create the weekly plan template
-        content = f"""# Weekly Plan - {sunday.strftime("%B %d, %Y")}
+        coming_up = ui.get_multi_line_input("\nWhat's coming up this week?")
 
-## Freetime focuses (from monthly plan):
-"""
+        print()
+        approach = input("How do you want to approach this week? ").strip()
+
+        # Build content
+        content = f"# Weekly Plan - {sunday.strftime('%B %d, %Y')}\n"
+
+        if monthly_freetime:
+            content += "\n## Freetime focuses (from monthly plan):\n"
+            for focus in monthly_freetime:
+                content += f"- {focus}\n"
+
+        content += "\n## Freetime focuses this week:\n"
         if freetime_focuses:
             for focus in freetime_focuses:
                 content += f"- {focus}\n"
         else:
-            content += "- (No freetime focuses in monthly plan)\n"
+            content += "-\n"
 
-        content += """
-## Freetime focuses this week:
--
+        content += "\n## What's coming up:\n"
+        if coming_up:
+            for item in coming_up:
+                content += f"- {item}\n"
+        else:
+            content += "-\n"
 
-## What's coming up:
--
+        content += "\n## How I want to approach this week:\n"
+        if approach:
+            content += f"{approach}\n"
 
-## How I want to approach this week:
+        content += "\n"
 
-
-"""
-
-        # Write the template file
         io.write_file(filepath, content)
-
-        # Open in vim for editing
-        ui.open_in_editor(filepath)
-
         print(f"\nWeekly plan saved to: {filepath}")
 
     run_with_existing_check(filepath, "Weekly plan", create_weekly_plan)
