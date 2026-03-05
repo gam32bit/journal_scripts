@@ -141,6 +141,21 @@ def collect_freetime_focuses(d: date) -> list[str]:
     return focuses
 
 
+def collect_weekly_reflections(d: date) -> list[tuple[date, str]]:
+    """Collect 'how did this week go' reflections from each weekly review in the month."""
+    weekly_reviews = find_weekly_reviews_for_month(d)
+
+    reflections = []
+    for sunday, review_file in weekly_reviews:
+        parsed = parser.parse_file(review_file)
+        if parsed:
+            reflection = parsed.get_section_text("weekly_reflection")
+            if reflection:
+                reflections.append((sunday, reflection))
+
+    return reflections
+
+
 def calculate_consistency(d: date) -> dict:
     """Calculate consistency metrics for the month."""
     daily_count = len(find_daily_entries_for_month(d))
@@ -181,6 +196,16 @@ def run(target_date: date = None):
                 print(f"  - {focus}")
         else:
             print("  (No freetime focuses found)")
+
+        # Weekly reflections grouped by week
+        print("\n=== Weekly reflections ===")
+        weekly_reflections = collect_weekly_reflections(target_date)
+        if weekly_reflections:
+            for sunday, reflection in weekly_reflections:
+                print(f"\nWeek ending {(sunday + timedelta(days=6)).strftime('%B %d')}:")
+                print(f"  {reflection}")
+        else:
+            print("  (No weekly reflections found)")
 
         # Health
         print("\n=== Health ===")
@@ -239,6 +264,7 @@ def run(target_date: date = None):
             d=target_date,
             consistency=consistency,
             freetime_focuses=freetime_focuses,
+            weekly_reflections=weekly_reflections,
             sleep_data=sleep_data,
             mindful_eating_days=mindful_eating_days,
             weekly_summaries=weekly_review_summaries,

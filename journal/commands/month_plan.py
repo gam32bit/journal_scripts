@@ -13,19 +13,18 @@ def run(target_date: date = None):
     filepath = config.monthly_plan_path(target_date)
 
     def create_monthly_plan():
-        print("=== Monthly Plan Setup ===")
-        print("Opening monthly plan template in vim...")
-        print("Fill in the sections and save when done.\n")
+        month_name = target_date.strftime("%B %Y")
+        print(f"=== Monthly Plan: {month_name} ===\n")
 
-        # Create the monthly plan template with empty sections
-        content = templates.monthly_plan_template(target_date, [], "", [])
+        coming_up = ui.get_multi_line_input("What's coming up this month? (events, deadlines, trips)")
 
-        # Write the template file
+        print()
+        themes = input("Themes or intentions for the month: ").strip()
+
+        freetime = ui.get_multi_line_input("\nFreetime focuses to prioritize:")
+
+        content = templates.monthly_plan_template(target_date, coming_up, themes, freetime)
         io.write_file(filepath, content)
-
-        # Open in vim for editing
-        ui.open_in_editor(filepath)
-
         print(f"\nMonthly plan saved to: {filepath}")
 
     run_with_existing_check(filepath, "Monthly plan", create_monthly_plan)

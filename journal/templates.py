@@ -136,6 +136,7 @@ def monthly_review_template(
     d: date,
     consistency: dict,
     freetime_focuses: list[str],
+    weekly_reflections: list[tuple[date, str]],
     sleep_data: dict,
     mindful_eating_days: int,
     weekly_summaries: list[tuple[date, list[str]]],
@@ -160,6 +161,14 @@ Month: {month_name}
             content += f"- {focus}\n"
     else:
         content += "(No freetime focuses found)\n"
+
+    content += "\n## Weekly reflections:\n"
+    if weekly_reflections:
+        for sunday, reflection in weekly_reflections:
+            content += f"\n### Week ending {(sunday + timedelta(days=6)).strftime('%B %d')}\n"
+            content += f"{reflection}\n"
+    else:
+        content += "(No weekly reflections found)\n"
 
     content += "\n## Health:\n"
     content += f"- Sleep average: {sleep_data['average']:.1f} hours"
