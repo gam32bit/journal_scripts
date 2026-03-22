@@ -39,6 +39,10 @@ SECTION_ALIASES = {
     "consistency": "consistency",
     "monthly reflection": "monthly_reflection",
     "monthly summary": "monthly_summary",
+
+    # Writing ideas (in weekly plan)
+    "writing ideas": "writing_ideas",
+    "writing ideas for this week": "writing_ideas",
 }
 
 

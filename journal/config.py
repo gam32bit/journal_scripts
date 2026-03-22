@@ -4,12 +4,17 @@ Paths, constants, and editor settings.
 """
 
 import os
+import re
 from pathlib import Path
 from datetime import date, timedelta
 
 
 # Base directory for all journal files
 JOURNAL_DIR = Path.home() / ".entries_encrypted/"
+
+# Writing directories — NOT encrypted, separate from journal entries
+WRITING_DIR = Path.home() / "writing" / "drafts"
+PUBLISH_DIR = Path.home() / "writing" / "published"
 
 # Editor: respect $EDITOR, fall back to vim
 EDITOR = os.environ.get("EDITOR", "vim")
@@ -64,3 +69,19 @@ def monthly_plan_path(d: date) -> Path:
 def ensure_dir(filepath: Path) -> None:
     """Create parent directories if they don't exist."""
     filepath.parent.mkdir(parents=True, exist_ok=True)
+
+
+def slugify(text: str) -> str:
+    """Convert text to URL-friendly slug: lowercase, hyphens, no special chars."""
+    text = text.lower()
+    text = re.sub(r"[^\w\s-]", "", text)
+    text = re.sub(r"[\s_]+", "-", text)
+    text = text.strip("-")
+    return text
+
+
+def writing_path(d: date, title: str) -> Path:
+    """Path for a writing draft file."""
+    WRITING_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{d}-{slugify(title)}.md"
+    return WRITING_DIR / filename

@@ -4,6 +4,7 @@ import calendar
 from datetime import date, timedelta
 from journal import config, parser, templates, ui, io
 from .base import run_with_existing_check
+from .writing import scan_writings
 
 
 def get_month_dates(d: date) -> list[date]:
@@ -162,6 +163,19 @@ def run(target_date: date = None):
         if not weekly_review_summaries:
             print("  (No weekly summaries found)")
 
+        # Scan writing output for this month
+        month_dates = get_month_dates(target_date)
+        date_strs = {d.strftime("%Y-%m-%d") for d in month_dates}
+        writings = scan_writings(date_strs)
+
+        if writings:
+            published_count = sum(1 for _, s, _, _ in writings if s == "published")
+            draft_count = sum(1 for _, s, _, _ in writings if s == "draft")
+            print(f"\n=== Writing this month ===")
+            print(f"Published: {published_count}  Drafts: {draft_count}")
+            for title, status, source_url, source_title in writings:
+                print(f'  - "{title}" ({status})')
+
         # Offer to open specific weekly reviews
         if weekly_reviews:
             print(f"\n--- Weekly Reviews ---")
@@ -191,6 +205,7 @@ def run(target_date: date = None):
             weekly_summaries=weekly_review_summaries,
             monthly_summary=monthly_summary,
             monthly_reflection=monthly_reflection,
+            writings=writings if writings else None,
         )
 
         # Write the file

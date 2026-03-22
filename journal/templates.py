@@ -6,6 +6,29 @@ Generates content for new entries.
 from datetime import date, timedelta
 
 
+def writing_template(d: date, title: str, source_url: str = "", source_title: str = "") -> str:
+    """Generate writing/reflection entry template."""
+    source_url_val = source_url or ""
+    source_title_val = source_title or ""
+
+    content = f"""---
+title: {title}
+date: {d}
+source_url: {source_url_val}
+source_title: {source_title_val}
+status: draft
+---
+
+# {title}
+
+"""
+    if source_url_val:
+        display = source_title_val if source_title_val else source_url_val
+        content += f"Source: [{display}]({source_url_val})\n\n"
+
+    return content
+
+
 def weekly_plan_template(d: date) -> str:
     """Generate weekly plan template."""
     return f"""# Weekly Plan - {d.strftime("%B %d, %Y")}
@@ -74,6 +97,7 @@ def weekly_review_template(
     daily_summaries: dict[str, list[str]],
     weekly_reflection: str,
     weekly_summary: list[str],
+    writings: list[tuple] = None,
 ) -> str:
     """Generate weekly review content."""
     content = f"""# Weekly Review - {d.strftime("%B %d, %Y")}
@@ -103,6 +127,21 @@ def weekly_review_template(
     for bullet in weekly_summary:
         content += f"- {bullet}\n"
 
+    if writings:
+        reading_reflections = [(t, s, su, st) for t, s, su, st in writings if su and su.strip()]
+        other_writings = [(t, s, su, st) for t, s, su, st in writings if not (su and su.strip())]
+
+        if reading_reflections:
+            content += "\n## Reading reflections this week:\n"
+            for title, status, source_url, source_title in reading_reflections:
+                ref = source_title if source_title and source_title.strip() else source_url
+                content += f'- "{title}" (re: {ref}) ({status})\n'
+
+        if other_writings:
+            content += "\n## Writing this week:\n"
+            for title, status, source_url, source_title in other_writings:
+                content += f'- "{title}" ({status})\n'
+
     return content
 
 
@@ -114,6 +153,7 @@ def monthly_review_template(
     weekly_summaries: list[tuple[date, list[str]]],
     monthly_summary: list[str],
     monthly_reflection: str,
+    writings: list[tuple] = None,
 ) -> str:
     """Generate monthly review content."""
     month_name = d.strftime("%B %Y")
@@ -147,6 +187,13 @@ Month: {month_name}
         content += f"\n### Week ending {(sunday + timedelta(days=6)).strftime('%B %d')}\n"
         for bullet in summary:
             content += f"- {bullet}\n"
+
+    if writings:
+        published = [(t, s, su, st) for t, s, su, st in writings if s == "published"]
+        drafts = [(t, s, su, st) for t, s, su, st in writings if s == "draft"]
+        content += f"\n## Writing this month ({len(published)} published, {len(drafts)} draft):\n"
+        for title, status, source_url, source_title in writings:
+            content += f'- "{title}" ({status})\n'
 
     content += "\n## Monthly summary:\n"
     for bullet in monthly_summary:
