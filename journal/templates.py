@@ -24,7 +24,6 @@ def weekly_plan_template(d: date) -> str:
 
 def daily_journal_template(
     d: date,
-    sleep_hours: str,
     freetime_focuses: list[str],
 ) -> str:
     """Generate daily journal template."""
@@ -36,8 +35,6 @@ def daily_journal_template(
         freetime_str = "(No freetime focuses defined)"
 
     return f"""---
-sleep_hours: {sleep_hours}
-mindful_eating:
 ---
 
 # Daily Entry - {d.strftime("%A, %B %d, %Y")}
@@ -73,8 +70,6 @@ Month: {d.strftime("%B %Y")}
 
 def weekly_review_template(
     d: date,
-    sleep_data: list[tuple[str, float]],
-    mindful_eating_logs: list[tuple[str, str]],
     freetime_focuses: list[str],
     daily_summaries: dict[str, list[str]],
     weekly_reflection: str,
@@ -83,29 +78,8 @@ def weekly_review_template(
     """Generate weekly review content."""
     content = f"""# Weekly Review - {d.strftime("%B %d, %Y")}
 
-## Sleep this week:
+## Freetime focuses:
 """
-    if sleep_data:
-        sleep_avg = sum(h for _, h in sleep_data) / len(sleep_data)
-        content += f"Average: {sleep_avg:.1f} hours\n\n"
-        for day_name, hours in sleep_data:
-            full_blocks = int(hours)
-            partial = hours - full_blocks
-            bar = "█" * full_blocks
-            if partial >= 0.5:
-                bar += "▌"
-            content += f"{day_name}: {bar} {hours:.1f}h\n"
-    else:
-        content += "(No sleep data found)\n"
-
-    content += "\n## Mindful eating logs:\n"
-    if mindful_eating_logs:
-        for day_name, log in mindful_eating_logs:
-            content += f"{day_name}: {log}\n"
-    else:
-        content += "(No mindful eating logs found)\n"
-
-    content += "\n## Freetime focuses:\n"
     if freetime_focuses:
         for focus in freetime_focuses:
             content += f"- {focus}\n"
@@ -137,8 +111,6 @@ def monthly_review_template(
     consistency: dict,
     freetime_focuses: list[str],
     weekly_reflections: list[tuple[date, str]],
-    sleep_data: dict,
-    mindful_eating_days: int,
     weekly_summaries: list[tuple[date, list[str]]],
     monthly_summary: list[str],
     monthly_reflection: str,
@@ -169,15 +141,6 @@ Month: {month_name}
             content += f"{reflection}\n"
     else:
         content += "(No weekly reflections found)\n"
-
-    content += "\n## Health:\n"
-    content += f"- Sleep average: {sleep_data['average']:.1f} hours"
-    if sleep_data['trend'] != 0.0:
-        trend_sign = "+" if sleep_data['trend'] > 0 else ""
-        content += f" (trend: {trend_sign}{sleep_data['trend']:.1f} vs last month)\n"
-    else:
-        content += " (no trend data)\n"
-    content += f"- Days with mindful eating logged: {mindful_eating_days}\n"
 
     content += "\n## Weekly summaries:\n"
     for sunday, summary in weekly_summaries:

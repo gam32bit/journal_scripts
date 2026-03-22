@@ -16,12 +16,6 @@ def run(target_date: date = None):
     def create_daily_entry():
         print("=== Daily Journal Entry ===\n")
 
-        # Get sleep hours
-        sleep_hours = input("How many hours did you sleep last night? ").strip()
-
-        # Get thoughts on eating
-        mindful_eating = input("Thoughts on eating yesterday? ").strip()
-
         # Find weekly plan for freetime focuses
         weekly_path = config.weekly_path(target_date)
         freetime_focuses = []
@@ -32,15 +26,7 @@ def run(target_date: date = None):
                 freetime_focuses = parsed.get_list_items("freetime")
 
         # Create initial journal template using the template function
-        content = templates.daily_journal_template(target_date, sleep_hours, freetime_focuses)
-
-        # If mindful eating was provided, update the front matter
-        if mindful_eating:
-            content = re.sub(
-                r'mindful_eating:',
-                f'mindful_eating: {mindful_eating}',
-                content
-            )
+        content = templates.daily_journal_template(target_date, freetime_focuses)
 
         # Write initial file
         io.write_file(filepath, content)

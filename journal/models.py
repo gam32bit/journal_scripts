@@ -53,11 +53,3 @@ class ParsedFile:
 
         # Fall back to section
         return self.get_list_items("summary")
-
-    def get_sleep_hours(self) -> str | None:
-        """Extract sleep hours from front matter."""
-        return self.get_front_matter("sleep_hours")
-
-    def get_mindful_eating(self) -> str | None:
-        """Extract mindful eating moment from front matter."""
-        return self.get_front_matter("mindful_eating")

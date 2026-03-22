@@ -60,69 +60,6 @@ def find_weekly_plans_for_month(d: date) -> list[tuple[date, any]]:
 
     return sorted(plans, key=lambda x: x[0])
 
-
-def calculate_sleep_data(d: date) -> dict:
-    """Calculate sleep statistics for the month."""
-    daily_entries = find_daily_entries_for_month(d)
-
-    sleep_hours = []
-    for entry in daily_entries:
-        parsed = parser.parse_file(entry)
-        if parsed:
-            hours_str = parsed.get_sleep_hours()
-            if hours_str:
-                try:
-                    sleep_hours.append(float(hours_str))
-                except ValueError:
-                    pass
-
-    if not sleep_hours:
-        return {
-            "average": 0.0,
-            "trend": 0.0,
-        }
-
-    avg = sum(sleep_hours) / len(sleep_hours)
-
-    # Get previous month's average for trend
-    prev_month_date = d.replace(day=1) - timedelta(days=1)
-    prev_entries = find_daily_entries_for_month(prev_month_date)
-    prev_sleep_hours = []
-
-    for entry in prev_entries:
-        parsed = parser.parse_file(entry)
-        if parsed:
-            hours_str = parsed.get_sleep_hours()
-            if hours_str:
-                try:
-                    prev_sleep_hours.append(float(hours_str))
-                except ValueError:
-                    pass
-
-    prev_avg = sum(prev_sleep_hours) / len(prev_sleep_hours) if prev_sleep_hours else 0.0
-    trend = avg - prev_avg if prev_avg > 0 else 0.0
-
-    return {
-        "average": avg,
-        "trend": trend,
-    }
-
-
-def count_mindful_eating_days(d: date) -> int:
-    """Count days with mindful eating logged."""
-    daily_entries = find_daily_entries_for_month(d)
-    count = 0
-
-    for entry in daily_entries:
-        parsed = parser.parse_file(entry)
-        if parsed:
-            mindful = parsed.get_mindful_eating()
-            if mindful and mindful.strip():
-                count += 1
-
-    return count
-
-
 def collect_freetime_focuses(d: date) -> list[str]:
     """Collect all unique freetime focuses from weekly plans in the month."""
     weekly_plans = find_weekly_plans_for_month(d)
@@ -207,20 +144,6 @@ def run(target_date: date = None):
         else:
             print("  (No weekly reflections found)")
 
-        # Health
-        print("\n=== Health ===")
-        sleep_data = calculate_sleep_data(target_date)
-        mindful_eating_days = count_mindful_eating_days(target_date)
-
-        print(f"Sleep average: {sleep_data['average']:.1f} hours", end="")
-        if sleep_data['trend'] != 0.0:
-            trend_sign = "+" if sleep_data['trend'] > 0 else ""
-            print(f" (trend: {trend_sign}{sleep_data['trend']:.1f} vs last month)")
-        else:
-            print(" (no trend data)")
-
-        print(f"Days with mindful eating logged: {mindful_eating_days}")
-
         # Weekly summaries
         print("\n=== Weekly summaries ===")
         weekly_reviews = find_weekly_reviews_for_month(target_date)
@@ -265,8 +188,6 @@ def run(target_date: date = None):
             consistency=consistency,
             freetime_focuses=freetime_focuses,
             weekly_reflections=weekly_reflections,
-            sleep_data=sleep_data,
-            mindful_eating_days=mindful_eating_days,
             weekly_summaries=weekly_review_summaries,
             monthly_summary=monthly_summary,
             monthly_reflection=monthly_reflection,
