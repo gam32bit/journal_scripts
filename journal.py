@@ -9,6 +9,8 @@ Usage:
     journal.py week review  # Create weekly review
     journal.py month plan   # Create monthly plan
     journal.py month review # Create monthly review
+    journal.py write        # Create writing/reflection entry
+    journal.py stats        # Show journal and writing stats
 
 Options:
     --date YYYY-MM-DD       Target a specific date instead of today
@@ -72,6 +74,8 @@ def main():
         "week review": commands.week_review,
         "month plan": commands.month_plan,
         "month review": commands.month_review,
+        "write": commands.write,
+        "stats": commands.stats,
     }
 
     if cmd in command_map:
@@ -99,10 +103,12 @@ def run_interactive_menu(target_date=None):
         print("1. Daily Entry")
         print("2. Weekly")
         print("3. Monthly")
+        print("4. Writing")
+        print("5. Stats")
         print("0. Exit")
         print()
 
-        choice = input("Select an option (0-3): ").strip()
+        choice = input("Select an option (0-5): ").strip()
 
         if choice == "0":
             print("Goodbye!")
@@ -149,8 +155,16 @@ def run_interactive_menu(target_date=None):
                 break
             else:
                 print("Invalid choice. Please select 0-2.")
+        elif choice == "4":
+            commands.write(**kwargs)
+            print()
+            break
+        elif choice == "5":
+            commands.stats(**kwargs)
+            print()
+            break
         else:
-            print("Invalid choice. Please select 0-3.")
+            print("Invalid choice. Please select 0-5.")
 
 
 if __name__ == "__main__":

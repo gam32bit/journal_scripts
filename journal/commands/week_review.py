@@ -3,6 +3,7 @@
 from datetime import date
 from journal import config, parser, templates, ui, io
 from .base import run_with_existing_check
+from .writing import scan_writings
 
 
 def run(target_date: date = None):
@@ -29,25 +30,6 @@ def run(target_date: date = None):
             if parsed:
                 freetime_focuses = parsed.get_list_items("freetime")
                 approach_text = parsed.get_section_text("approach")
-
-        for i, d in enumerate(week_dates):
-            daily_path = config.daily_path(d)
-            if daily_path.exists():
-                parsed = parser.parse_file(daily_path)
-                if parsed:
-                    # Sleep
-                    hours_str = parsed.get_sleep_hours()
-                    if hours_str:
-                        try:
-                            hours = float(hours_str)
-                            sleep_data.append((day_names[i], hours))
-                        except ValueError:
-                            pass
-
-                    # Mindful eating
-                    mindful = parsed.get_mindful_eating()
-                    if mindful and mindful.strip():
-                        mindful_eating_logs.append((day_names[i], mindful))
 
         # Display freetime focuses
         print("\n=== Freetime focuses ===")
@@ -83,12 +65,33 @@ def run(target_date: date = None):
         if not daily_summaries:
             print("  (No daily summaries found)")
 
+        # Scan writing output for this week
+        date_strs = {d.strftime("%Y-%m-%d") for d in week_dates}
+        writings = scan_writings(date_strs)
+
+        if writings:
+            reading_reflections = [(t, s, su, st) for t, s, su, st in writings if su and su.strip()]
+            other_writings = [(t, s, su, st) for t, s, su, st in writings if not (su and su.strip())]
+
+            if reading_reflections:
+                print("\n=== Reading reflections this week ===")
+                for title, status, source_url, source_title in reading_reflections:
+                    ref = source_title if source_title and source_title.strip() else source_url
+                    print(f'  - "{title}" (re: {ref}) ({status})')
+
+            if other_writings:
+                print("\n=== Other writing this week ===")
+                for title, status, source_url, source_title in other_writings:
+                    print(f'  - "{title}" ({status})')
+
         # Prompt for weekly reflection
         print("\n=== Weekly Reflection ===")
         weekly_reflection = input("How did this week go? ").strip()
 
         # Prompt for weekly summary bullets
-        weekly_summary = ui.get_multi_line_input("\n=== Weekly Summary ===\nWrite 3-5 bullets synthesizing the week:")
+        weekly_summary = ui.get_multi_line_input(
+            "\n=== Weekly Summary ===\nWrite 3-5 bullets synthesizing the week:"
+        )
 
         # Build the review content using template
         content = templates.weekly_review_template(
@@ -97,6 +100,7 @@ def run(target_date: date = None):
             daily_summaries=daily_summaries,
             weekly_reflection=weekly_reflection,
             weekly_summary=weekly_summary,
+            writings=writings if writings else None,
         )
 
         # Write the file

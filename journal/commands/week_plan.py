@@ -39,6 +39,8 @@ def run(target_date: date = None):
         print()
         approach = input("How do you want to approach this week? ").strip()
 
+        writing_ideas = ui.get_multi_line_input("\nWriting ideas for this week:")
+
         # Build content
         content = f"# Weekly Plan - {sunday.strftime('%B %d, %Y')}\n"
 
@@ -64,6 +66,13 @@ def run(target_date: date = None):
         content += "\n## How I want to approach this week:\n"
         if approach:
             content += f"{approach}\n"
+
+        content += "\n## Writing ideas:\n"
+        if writing_ideas:
+            for idea in writing_ideas:
+                content += f"- {idea}\n"
+        else:
+            content += "-\n"
 
         content += "\n"
 
