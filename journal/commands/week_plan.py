@@ -32,9 +32,9 @@ def run(target_date: date = None):
                 print(f"  - {focus}")
             print()
 
-        freetime_focuses = ui.get_multi_line_input("Freetime focuses this week:")
-
         coming_up = ui.get_multi_line_input("\nWhat's coming up this week?")
+        
+        freetime_focuses = ui.get_multi_line_input("Freetime focuses this week:")
 
         print()
         approach = input("How do you want to approach this week? ").strip()
