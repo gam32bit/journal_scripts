@@ -16,7 +16,7 @@ title: {title}
 date: {d}
 source_url: {source_url_val}
 source_title: {source_title_val}
-status: draft
+draft: true
 ---
 
 # {title}

@@ -1,6 +1,5 @@
 """Writing/reflection entry command."""
 
-import shutil
 from datetime import date
 from journal import config, parser, templates, ui, io
 
@@ -93,7 +92,9 @@ def run(target_date: date = None):
     if publish == "y":
         config.PUBLISH_DIR.mkdir(parents=True, exist_ok=True)
         dest = config.PUBLISH_DIR / filepath.name
-        shutil.copy2(filepath, dest)
+        content = filepath.read_text()
+        content = content.replace("draft: true", "draft: false", 1)
+        dest.write_text(content)
         print(f"Published to: {dest}")
     else:
         print(f"Draft saved at: {filepath}")

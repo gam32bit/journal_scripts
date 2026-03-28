@@ -14,7 +14,7 @@ JOURNAL_DIR = Path.home() / ".entries_encrypted/"
 
 # Writing directories — NOT encrypted, separate from journal entries
 WRITING_DIR = Path.home() / "writing" / "drafts"
-PUBLISH_DIR = Path.home() / "writing" / "published"
+PUBLISH_DIR = Path.home() / "jwcaterine-site" / "src" / "content" / "blog"
 
 # Editor: respect $EDITOR, fall back to vim
 EDITOR = os.environ.get("EDITOR", "vim")
