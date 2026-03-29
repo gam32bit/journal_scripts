@@ -16,17 +16,8 @@ def run(target_date: date = None):
     def create_daily_entry():
         print("=== Daily Journal Entry ===\n")
 
-        # Find weekly plan for freetime focuses
-        weekly_path = config.weekly_path(target_date)
-        freetime_focuses = []
-
-        if weekly_path.exists():
-            parsed = parser.parse_file(weekly_path)
-            if parsed:
-                freetime_focuses = parsed.get_list_items("freetime")
-
         # Create initial journal template using the template function
-        content = templates.daily_journal_template(target_date, freetime_focuses)
+        content = templates.daily_journal_template(target_date)
 
         # Write initial file
         io.write_file(filepath, content)

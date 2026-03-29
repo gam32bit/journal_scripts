@@ -39,31 +39,16 @@ def weekly_plan_template(d: date) -> str:
 ## How I want to approach this week:
 
 
-## Freetime focuses:
--
-
 """
 
 
 def daily_journal_template(
-    d: date,
-    freetime_focuses: list[str],
+    d: date
 ) -> str:
     """Generate daily journal template."""
 
-    # Format freetime focuses
-    if freetime_focuses:
-        freetime_str = "\n".join(f"- {focus}" for focus in freetime_focuses)
-    else:
-        freetime_str = "(No freetime focuses defined)"
-
-    return f"""---
----
-
+    return f"""
 # Daily Entry - {d.strftime("%A, %B %d, %Y")}
-
-## Freetime focuses:
-{freetime_str}
 
 ---
 
@@ -101,15 +86,7 @@ def weekly_review_template(
 ) -> str:
     """Generate weekly review content."""
     content = f"""# Weekly Review - {d.strftime("%B %d, %Y")}
-
-## Freetime focuses:
 """
-    if freetime_focuses:
-        for focus in freetime_focuses:
-            content += f"- {focus}\n"
-    else:
-        content += "(No freetime focuses defined)\n"
-
     content += "\n## Daily summaries:\n"
     if daily_summaries:
         for day_name, summaries in daily_summaries.items():

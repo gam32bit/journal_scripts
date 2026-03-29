@@ -34,8 +34,6 @@ def run(target_date: date = None):
 
         coming_up = ui.get_multi_line_input("\nWhat's coming up this week?")
         
-        freetime_focuses = ui.get_multi_line_input("Freetime focuses this week:")
-
         print()
         approach = input("How do you want to approach this week? ").strip()
 
@@ -48,13 +46,6 @@ def run(target_date: date = None):
             content += "\n## Freetime focuses (from monthly plan):\n"
             for focus in monthly_freetime:
                 content += f"- {focus}\n"
-
-        content += "\n## Freetime focuses this week:\n"
-        if freetime_focuses:
-            for focus in freetime_focuses:
-                content += f"- {focus}\n"
-        else:
-            content += "-\n"
 
         content += "\n## What's coming up:\n"
         if coming_up:
