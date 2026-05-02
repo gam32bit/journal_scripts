@@ -4,7 +4,6 @@ import calendar
 from datetime import date, timedelta
 from journal import config, parser, templates, ui, io
 from .base import run_with_existing_check
-from .writing import scan_writings
 
 
 def get_month_dates(d: date) -> list[date]:
@@ -44,41 +43,6 @@ def find_daily_entries_for_month(d: date) -> list[any]:
     return entries
 
 
-def find_weekly_plans_for_month(d: date) -> list[tuple[date, any]]:
-    """Find all weekly plan files for the month containing date d."""
-    plans = []
-    month_dates = get_month_dates(d)
-
-    # Get unique weeks (by Sunday) that fall in this month
-    weeks_seen = set()
-    for day in month_dates:
-        sunday = config.get_sunday(day)
-        if sunday not in weeks_seen:
-            weeks_seen.add(sunday)
-            weekly_file = config.weekly_path(sunday)
-            if weekly_file.exists():
-                plans.append((sunday, weekly_file))
-
-    return sorted(plans, key=lambda x: x[0])
-
-def collect_freetime_focuses(d: date) -> list[str]:
-    """Collect all unique freetime focuses from weekly plans in the month."""
-    weekly_plans = find_weekly_plans_for_month(d)
-
-    focuses = []
-    seen = set()
-    for _, plan in weekly_plans:
-        parsed = parser.parse_file(plan)
-        if parsed:
-            plan_focuses = parsed.get_list_items("freetime")
-            for focus in plan_focuses:
-                if focus not in seen:
-                    focuses.append(focus)
-                    seen.add(focus)
-
-    return focuses
-
-
 def collect_weekly_reflections(d: date) -> list[tuple[date, str]]:
     """Collect 'how did this week go' reflections from each weekly review in the month."""
     weekly_reviews = find_weekly_reviews_for_month(d)
@@ -97,13 +61,11 @@ def collect_weekly_reflections(d: date) -> list[tuple[date, str]]:
 def calculate_consistency(d: date) -> dict:
     """Calculate consistency metrics for the month."""
     daily_count = len(find_daily_entries_for_month(d))
-    weekly_plan_count = len(find_weekly_plans_for_month(d))
     weekly_review_count = len(find_weekly_reviews_for_month(d))
 
     return {
         "daily_entries": daily_count,
-        "weekly_plans": weekly_plan_count,
-        "weekly_reviews": weekly_review_count
+        "weekly_reviews": weekly_review_count,
     }
 
 
@@ -123,17 +85,7 @@ def run(target_date: date = None):
         consistency = calculate_consistency(target_date)
         print("=== Consistency ===")
         print(f"Daily entries: {consistency['daily_entries']}")
-        print(f"Weekly plans: {consistency['weekly_plans']}")
         print(f"Weekly reviews: {consistency['weekly_reviews']}")
-
-        # Freetime focuses
-        print("\n=== Freetime focuses this month ===")
-        freetime_focuses = collect_freetime_focuses(target_date)
-        if freetime_focuses:
-            for focus in freetime_focuses:
-                print(f"  - {focus}")
-        else:
-            print("  (No freetime focuses found)")
 
         # Weekly reflections grouped by week
         print("\n=== Weekly reflections ===")
@@ -163,19 +115,6 @@ def run(target_date: date = None):
         if not weekly_review_summaries:
             print("  (No weekly summaries found)")
 
-        # Scan writing output for this month
-        month_dates = get_month_dates(target_date)
-        date_strs = {d.strftime("%Y-%m-%d") for d in month_dates}
-        writings = scan_writings(date_strs)
-
-        if writings:
-            published_count = sum(1 for _, s, _, _ in writings if s == "published")
-            draft_count = sum(1 for _, s, _, _ in writings if s == "draft")
-            print(f"\n=== Writing this month ===")
-            print(f"Published: {published_count}  Drafts: {draft_count}")
-            for title, status, source_url, source_title in writings:
-                print(f'  - "{title}" ({status})')
-
         # Offer to open specific weekly reviews
         if weekly_reviews:
             print(f"\n--- Weekly Reviews ---")
@@ -200,12 +139,10 @@ def run(target_date: date = None):
         content = templates.monthly_review_template(
             d=target_date,
             consistency=consistency,
-            freetime_focuses=freetime_focuses,
             weekly_reflections=weekly_reflections,
             weekly_summaries=weekly_review_summaries,
             monthly_summary=monthly_summary,
             monthly_reflection=monthly_reflection,
-            writings=writings if writings else None,
         )
 
         # Write the file
