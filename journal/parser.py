@@ -10,16 +10,6 @@ from .models import ParsedFile
 
 # Section header patterns - normalize these to canonical names
 SECTION_ALIASES = {
-    # Weekly plan sections
-    "what's coming up": "coming_up",
-    "how i want to approach this week": "approach",
-    "freetime focuses": "freetime",
-    "freetime focuses (from monthly plan)": "freetime_monthly",
-    "freetime focuses this week": "freetime",
-
-    # Legacy freetime support (for older files)
-    "focus areas": "freetime",
-
     # Daily journal sections
     "journal entry": "journal",
     "journal": "journal",
@@ -30,19 +20,10 @@ SECTION_ALIASES = {
     "weekly summary": "weekly_summary",
     "daily summaries": "daily_summaries",
 
-    # Monthly plan sections
-    "what's coming up this month": "coming_up_month",
-    "themes or intentions": "themes",
-    "freetime focuses to prioritize": "freetime",
-
     # Monthly review sections
     "consistency": "consistency",
     "monthly reflection": "monthly_reflection",
     "monthly summary": "monthly_summary",
-
-    # Writing ideas (in weekly plan)
-    "writing ideas": "writing_ideas",
-    "writing ideas for this week": "writing_ideas",
 }
 
 

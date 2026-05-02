@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
 """
-Journal - Weekly rhythm system.
+Journal - Reflection rhythm system.
 
 Usage:
     journal.py              # Interactive menu
     journal.py day          # Create daily entry
-    journal.py week plan    # Create weekly plan
     journal.py week review  # Create weekly review
-    journal.py month plan   # Create monthly plan
     journal.py month review # Create monthly review
-    journal.py write        # Create writing/reflection entry
-    journal.py stats        # Show journal and writing stats
 
 Options:
     --date YYYY-MM-DD       Target a specific date instead of today
@@ -70,12 +66,8 @@ def main():
     command_map = {
         "day": commands.day,
         "daily": commands.day,  # alias
-        "week plan": commands.week_plan,
         "week review": commands.week_review,
-        "month plan": commands.month_plan,
         "month review": commands.month_review,
-        "write": commands.write,
-        "stats": commands.stats,
     }
 
     if cmd in command_map:
@@ -96,19 +88,17 @@ def run_interactive_menu(target_date=None):
         kwargs["target_date"] = target_date
 
     while True:
-        header = "=== Weekly Rhythm ==="
+        header = "=== Reflection Rhythm ==="
         if target_date is not None:
-            header = f"=== Weekly Rhythm (date: {target_date}) ==="
+            header = f"=== Reflection Rhythm (date: {target_date}) ==="
         print(f"\n{header}")
         print("1. Daily Entry")
-        print("2. Weekly")
-        print("3. Monthly")
-        print("4. Writing")
-        print("5. Stats")
+        print("2. Weekly Review")
+        print("3. Monthly Review")
         print("0. Exit")
         print()
 
-        choice = input("Select an option (0-5): ").strip()
+        choice = input("Select an option (0-3): ").strip()
 
         if choice == "0":
             print("Goodbye!")
@@ -118,53 +108,15 @@ def run_interactive_menu(target_date=None):
             print()
             break
         elif choice == "2":
-            print("\n--- Weekly ---")
-            print("1. Plan")
-            print("2. Review")
-            print("0. Back")
-            print()
-            sub = input("Select an option (0-2): ").strip()
-            if sub == "0":
-                continue
-            elif sub == "1":
-                commands.week_plan(**kwargs)
-                print()
-                break
-            elif sub == "2":
-                commands.week_review(**kwargs)
-                print()
-                break
-            else:
-                print("Invalid choice. Please select 0-2.")
-        elif choice == "3":
-            print("\n--- Monthly ---")
-            print("1. Plan")
-            print("2. Review")
-            print("0. Back")
-            print()
-            sub = input("Select an option (0-2): ").strip()
-            if sub == "0":
-                continue
-            elif sub == "1":
-                commands.month_plan(**kwargs)
-                print()
-                break
-            elif sub == "2":
-                commands.month_review(**kwargs)
-                print()
-                break
-            else:
-                print("Invalid choice. Please select 0-2.")
-        elif choice == "4":
-            commands.write(**kwargs)
+            commands.week_review(**kwargs)
             print()
             break
-        elif choice == "5":
-            commands.stats(**kwargs)
+        elif choice == "3":
+            commands.month_review(**kwargs)
             print()
             break
         else:
-            print("Invalid choice. Please select 0-5.")
+            print("Invalid choice. Please select 0-3.")
 
 
 if __name__ == "__main__":
