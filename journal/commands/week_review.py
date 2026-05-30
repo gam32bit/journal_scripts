@@ -18,38 +18,34 @@ def run(target_date: date = None):
         week_dates = config.get_week_dates(target_date)
         day_names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-        # Collect daily summaries
-        print("=== Daily Summaries ===")
-        daily_summaries = {}
+        print("=== Daily Entries ===")
+        daily_entries = {}
 
         for i, d in enumerate(week_dates):
             daily_path = config.daily_path(d)
             if daily_path.exists():
                 parsed = parser.parse_file(daily_path)
                 if parsed:
-                    summaries = parsed.get_summary_bullets()
-                    if summaries:
-                        daily_summaries[day_names[i]] = summaries
-                        print(f"\n{day_names[i]}:")
-                        for bullet in summaries:
-                            print(f"  - {bullet}")
+                    journal_text = parsed.get_section_text("journal")
+                    if journal_text:
+                        label = f"{day_names[i]} ({d.strftime('%b %d')})"
+                        daily_entries[label] = journal_text
+                        print(f"\n{label}:")
+                        print(journal_text)
 
-        if not daily_summaries:
-            print("  (No daily summaries found)")
+        if not daily_entries:
+            print("  (No daily entries found)")
 
-        # Prompt for weekly reflection
         print("\n=== Weekly Reflection ===")
         weekly_reflection = input("How did this week go? ").strip()
 
-        # Prompt for weekly summary bullets
         weekly_summary = ui.get_multi_line_input(
             "\n=== Weekly Summary ===\nWrite 3-5 bullets synthesizing the week:"
         )
 
-        # Build the review content using template
         content = templates.weekly_review_template(
             d=target_date,
-            daily_summaries=daily_summaries,
+            daily_entries=daily_entries,
             weekly_reflection=weekly_reflection,
             weekly_summary=weekly_summary,
         )

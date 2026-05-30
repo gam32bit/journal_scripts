@@ -11,8 +11,8 @@ This system helps you maintain a sustainable reflection rhythm through daily pra
 | Command | Purpose | When to use |
 |---------|---------|-------------|
 | `journal.py` | Interactive menu to access all reflection commands | Anytime |
-| `journal.py day` | Daily entry with summary bullets | Daily |
-| `journal.py week review` | Aggregate the week's summaries into a review | Saturday |
+| `journal.py day` | Daily entry | Daily |
+| `journal.py week review` | Aggregate the week's entries into a review | Saturday |
 | `journal.py month review` | Aggregate monthly data from weekly reviews | End of month |
 
 ## File Structure
@@ -79,9 +79,6 @@ journal.py day
 
 Creates a daily entry that:
 - Opens default editor to write journal entry
-- Prompts for 2-3 summary bullets that capture the texture of the day
-
-Summary bullets are what get aggregated in weekly and monthly reviews (e.g., "Fun family visit", "Weird unexplained lethargy").
 
 If a journal entry already exists, you'll be prompted to:
 - **(e)dit** - Open the existing file in your editor
@@ -95,7 +92,7 @@ journal.py week review
 ```
 
 Aggregates the week's data:
-- Daily summaries organized by day
+- Full daily journal entries organized by day
 - Prompts for a weekly reflection ("how did this week go?")
 - Prompts for 3-5 weekly summary bullets
 
