@@ -23,21 +23,20 @@ def daily_journal_template(
 
 def weekly_review_template(
     d: date,
-    daily_summaries: dict[str, list[str]],
+    daily_entries: dict[str, str],
     weekly_reflection: str,
     weekly_summary: list[str],
 ) -> str:
     """Generate weekly review content."""
     content = f"""# Weekly Review - {d.strftime("%B %d, %Y")}
 """
-    content += "\n## Daily summaries:\n"
-    if daily_summaries:
-        for day_name, summaries in daily_summaries.items():
-            content += f"\n### {day_name}\n"
-            for bullet in summaries:
-                content += f"- {bullet}\n"
+    content += "\n## Daily entries:\n"
+    if daily_entries:
+        for day_label, journal_text in daily_entries.items():
+            content += f"\n### {day_label}\n"
+            content += f"{journal_text}\n"
     else:
-        content += "(No daily summaries found)\n"
+        content += "(No daily entries found)\n"
 
     content += "\n## Weekly reflection:\n"
     if weekly_reflection:
