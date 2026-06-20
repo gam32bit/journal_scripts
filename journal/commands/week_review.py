@@ -16,21 +16,21 @@ def run(target_date: date = None):
         print("=== Weekly Review ===\n")
 
         week_dates = config.get_week_dates(target_date)
-        day_names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
         print("=== Daily Entries ===")
         daily_entries = {}
 
-        for i, d in enumerate(week_dates):
+        for d in week_dates:
             daily_path = config.daily_path(d)
             if daily_path.exists():
                 parsed = parser.parse_file(daily_path)
                 if parsed:
                     journal_text = parsed.get_section_text("journal")
                     if journal_text:
-                        label = f"{day_names[i]} ({d.strftime('%b %d')})"
+                        label = d.strftime("%A, %B %d")
                         daily_entries[label] = journal_text
-                        print(f"\n{label}:")
+                        print(f"\n{'-' * 40}")
+                        print(label)
                         print(journal_text)
 
         if not daily_entries:

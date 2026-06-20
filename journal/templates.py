@@ -33,7 +33,7 @@ def weekly_review_template(
     content += "\n## Daily entries:\n"
     if daily_entries:
         for day_label, journal_text in daily_entries.items():
-            content += f"\n### {day_label}\n"
+            content += f"\n---\n\n**{day_label}**\n\n"
             content += f"{journal_text}\n"
     else:
         content += "(No daily entries found)\n"
