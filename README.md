@@ -17,10 +17,10 @@ This system helps you maintain a sustainable reflection rhythm through daily pra
 
 ## File Structure
 
-Journal entries are stored in `~/entries/` organized by year and month:
+Journal entries are stored in `~/.entries_encrypted/` organized by year and month:
 
 ```
-~/entries/
+~/.entries_encrypted/
 └── 2025/
     └── 01/
         ├── daily-2025-01-06.md
@@ -57,7 +57,9 @@ Launches an interactive menu where you can:
 
 ### The `--date` Flag
 
-By default, all commands target today's date. Use `--date YYYY-MM-DD` to target a specific date instead — useful for catching up on missed entries or running reviews retroactively:
+By default, `day` and `week review` target today's date, and `month review` targets the
+most recent completed month (see below). Use `--date YYYY-MM-DD` to target a specific
+date instead — useful for catching up on missed entries or running reviews retroactively:
 
 ```bash
 journal.py week review --date 2025-02-07   # Run last week's review using Saturday's date
@@ -107,6 +109,26 @@ If a weekly review already exists, you'll be prompted to:
 journal.py month review
 ```
 
+**Which month gets reviewed.** Rather than assuming today's month, this picks the most
+recent month that has actually finished, so running it on August 1st reviews July —
+not the August that just started. It prints which month it chose:
+
+```
+Reviewing July 2026 (complete as of Sat Aug 01).
+```
+
+Two rules decide this:
+
+1. A Sun–Sat week belongs to whichever month holds most of its seven days. The week of
+   Jul 26 – Aug 1 is six-sevenths July, so it's a July week.
+2. A month is finished once the last week belonging to it has ended.
+
+So July 2026 becomes reviewable on Sat Aug 1 and stays the target until Sat Aug 29,
+when August's final week closes. Use `--date` to override and review a specific month.
+
+The same week-ownership rule decides which weekly reviews a monthly review pulls in, so
+a week straddling a month boundary is counted once, in one month only.
+
 Aggregates data from the entire month:
 - **Consistency metrics**: Count of daily entries and weekly reviews
 - **Weekly reflections**: "How did this week go?" reflections from each weekly review
@@ -136,6 +158,8 @@ journal_scripts/
 ├── journal.py              # Single entry point with subcommands
 ├── README.md
 ├── .gitignore
+├── tests/
+│   └── test_dates.py       # Week/month detection tests
 └── journal/
     ├── __init__.py
     ├── config.py           # Paths and constants
@@ -150,6 +174,14 @@ journal_scripts/
         ├── day.py          # Daily entry command
         ├── week_review.py  # Weekly review command
         └── month_review.py # Monthly review command
+```
+
+## Tests
+
+Standard library only, no dependencies to install:
+
+```bash
+python3 -m unittest discover tests
 ```
 
 ## Roadmap

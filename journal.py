@@ -6,10 +6,10 @@ Usage:
     journal.py              # Interactive menu
     journal.py day          # Create daily entry
     journal.py week review  # Create weekly review
-    journal.py month review # Create monthly review
+    journal.py month review # Create monthly review (last completed month)
 
 Options:
-    --date YYYY-MM-DD       Target a specific date instead of today
+    --date YYYY-MM-DD       Target a specific date instead of the default
 """
 
 import sys
