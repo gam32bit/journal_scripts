@@ -14,16 +14,22 @@ def get_month_dates(d: date) -> list[date]:
 
 
 def find_weekly_reviews_for_month(d: date) -> list[tuple[date, any]]:
-    """Find all weekly review files for the month containing date d."""
+    """Find all weekly review files for the month containing date d.
+
+    A week that straddles a month boundary counts toward whichever month owns
+    most of its days, so no weekly review appears in two monthly reviews.
+    """
     reviews = []
     month_dates = get_month_dates(d)
 
-    # Get unique weeks (by Sunday) that fall in this month
+    # Get unique weeks (by Sunday) that belong to this month
     weeks_seen = set()
     for day in month_dates:
         sunday = config.get_sunday(day)
         if sunday not in weeks_seen:
             weeks_seen.add(sunday)
+            if config.week_owner(sunday) != (d.year, d.month):
+                continue
             # Review is on Saturday of that week
             saturday = sunday + timedelta(days=6)
             review_file = config.review_path(saturday)
@@ -71,14 +77,18 @@ def calculate_consistency(d: date) -> dict:
 
 def run(target_date: date = None):
     """Create a monthly review."""
-    if target_date is None:
-        target_date = date.today()
+    detected = target_date is None
+    if detected:
+        target_date = config.detect_review_month()
 
     filepath = config.monthly_path(target_date)
+    month_name = target_date.strftime("%B %Y")
+
+    if detected:
+        closed = config.last_week_end_of_month(target_date.year, target_date.month)
+        print(f"\nReviewing {month_name} (complete as of {closed.strftime('%a %b %d')}).")
 
     def create_monthly_review():
-        month_name = target_date.strftime("%B %Y")
-
         print(f"\n=== Monthly Review for {month_name} ===\n")
 
         # Consistency
